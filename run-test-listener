@@ -1,0 +1,7 @@
+if [ ! -p test-commands ]; then
+  mkfifo test-commands
+fi
+
+while true; do
+  sh -c "clear && $(cat test-commands)"
+done
