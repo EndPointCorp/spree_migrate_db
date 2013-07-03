@@ -1,12 +1,15 @@
-# SpreeDbMigrate
+# Spree Migrate DB
 
-TODO: Write a gem description
+This gem will help the Spree upgrade processs by migrating the database from one version of spree to another. It does this by creating a generic transport file of the current database and then allows you to import that file on the new application.
+
+*This Gem is under heavy development at the moment and is not ready for public use.*
+
 
 ## Installation
 
 Add this line to your application's Gemfile:
 
-    gem 'spree_db_migrate'
+    gem 'spree_migrate_db'
 
 And then execute:
 
@@ -14,11 +17,11 @@ And then execute:
 
 Or install it yourself as:
 
-    $ gem install spree_db_migrate
+    $ gem install spree_migrate_db
 
 ## Usage
 
-TODO: Write usage instructions here
+More to come...
 
 ## Contributing
 
