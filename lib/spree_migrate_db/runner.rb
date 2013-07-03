@@ -3,10 +3,10 @@
 
 module SpreeMigrateDB
   class Runner
-    def self.export(spree_version, schema_dir, destination_dir)
+    def self.export(spree_version, schema_file, destination_dir)
       puts "Starting migration export for Spree #{spree_version}"
       header = {spree_version: spree_version}
-      current_definition = CurrentSchemaDefinition.generate(schema_dir)
+      current_definition = CurrentSchemaDefinition.generate(schema_file)
       stats = GenerateExportDispatch.generate_migration_file(header, current_definition, destination_dir)
       UI.display_stats(stats)
     rescue => e
