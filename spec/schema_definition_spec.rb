@@ -1,4 +1,4 @@
-require 'lib/spree_migrate_db/schema_definition'
+require 'spec_helper'
 
 module SpreeMigrateDB
   describe SchemaDefinition do 

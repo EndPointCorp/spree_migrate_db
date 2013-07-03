@@ -1,5 +1,36 @@
-d = SpreeMigrateDB::SchemaDefinition.define "Spree Version 0.50.0" do
-  version "0.50.0"
+# This file is auto-generated from the current state of the database. Instead
+# of editing this file, please use the migrations feature of Active Record to
+# incrementally modify your database, and then regenerate this schema definition.
+#
+# Note that this schema.rb definition is the authoritative source for your
+# database schema. If you need to create the application database on another
+# system, you should be using db:schema:load, not running all the migrations
+# from scratch. The latter is a flawed and unsustainable approach (the more migrations
+# you'll amass, the slower it'll run and the greater likelihood for issues).
+#
+# It's strongly recommended to check this file into your version control system.
+
+ActiveRecord::Schema.define(:version => 20130218210613) do
+
+  create_table "addresses", :force => true do |t|
+    t.string   "firstname"
+    t.string   "lastname"
+    t.string   "address1"
+    t.string   "address2"
+    t.string   "city"
+    t.integer  "state_id"
+    t.string   "zipcode"
+    t.integer  "country_id"
+    t.string   "phone"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+    t.string   "state_name"
+    t.string   "alternative_phone"
+    t.string   "company"
+  end
+
+  add_index "addresses", ["firstname"], :name => "index_addresses_on_firstname"
+  add_index "addresses", ["lastname"], :name => "index_addresses_on_lastname"
 
   create_table "adjustments", :force => true do |t|
     t.integer  "order_id"
@@ -76,6 +107,21 @@ d = SpreeMigrateDB::SchemaDefinition.define "Spree Version 0.50.0" do
     t.string   "gateway_payment_profile_id"
   end
 
+  create_table "delayed_jobs", :force => true do |t|
+    t.integer  "priority",   :default => 0
+    t.integer  "attempts",   :default => 0
+    t.text     "handler"
+    t.text     "last_error"
+    t.datetime "run_at"
+    t.datetime "locked_at"
+    t.datetime "failed_at"
+    t.string   "locked_by"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "delayed_jobs", ["priority", "run_at"], :name => "delayed_jobs_priority"
+
   create_table "gateways", :force => true do |t|
     t.string   "type"
     t.string   "name"
@@ -87,6 +133,16 @@ d = SpreeMigrateDB::SchemaDefinition.define "Spree Version 0.50.0" do
     t.datetime "created_at"
     t.datetime "updated_at"
   end
+
+  create_table "gift_cards", :force => true do |t|
+    t.string   "number"
+    t.decimal  "balance",            :precision => 10, :scale => 2
+    t.datetime "created_at"
+    t.datetime "updated_at"
+    t.datetime "balance_updated_at"
+  end
+
+  add_index "gift_cards", ["number"], :name => "index_gift_cards_on_number"
 
   create_table "inventory_units", :force => true do |t|
     t.integer  "variant_id"
@@ -141,6 +197,7 @@ d = SpreeMigrateDB::SchemaDefinition.define "Spree Version 0.50.0" do
   create_table "option_types_prototypes", :id => false, :force => true do |t|
     t.integer "prototype_id"
     t.integer "option_type_id"
+    t.integer "position",       :default => 1
   end
 
   create_table "option_values", :force => true do |t|
@@ -150,7 +207,11 @@ d = SpreeMigrateDB::SchemaDefinition.define "Spree Version 0.50.0" do
     t.string   "presentation"
     t.datetime "created_at"
     t.datetime "updated_at"
+    t.string   "sku"
+    t.decimal  "amount",         :precision => 10, :scale => 2, :default => 0.0
   end
+
+  add_index "option_values", ["option_type_id"], :name => "index_option_values_on_option_type_id"
 
   create_table "option_values_variants", :id => false, :force => true do |t|
     t.integer "variant_id"
@@ -163,13 +224,13 @@ d = SpreeMigrateDB::SchemaDefinition.define "Spree Version 0.50.0" do
   create_table "orders", :force => true do |t|
     t.integer  "user_id"
     t.string   "number",               :limit => 15
-    t.decimal  "item_total",                         :precision => 8, :scale => 2, :default => 0.0, :null => false
-    t.decimal  "total",                              :precision => 8, :scale => 2, :default => 0.0, :null => false
+    t.decimal  "item_total",                         :precision => 8, :scale => 2, :default => 0.0,   :null => false
+    t.decimal  "total",                              :precision => 8, :scale => 2, :default => 0.0,   :null => false
     t.datetime "created_at"
     t.datetime "updated_at"
     t.string   "state"
-    t.decimal  "adjustment_total",                   :precision => 8, :scale => 2, :default => 0.0, :null => false
-    t.decimal  "credit_total",                       :precision => 8, :scale => 2, :default => 0.0, :null => false
+    t.decimal  "adjustment_total",                   :precision => 8, :scale => 2, :default => 0.0,   :null => false
+    t.decimal  "credit_total",                       :precision => 8, :scale => 2, :default => 0.0,   :null => false
     t.datetime "completed_at"
     t.integer  "bill_address_id"
     t.integer  "ship_address_id"
@@ -179,6 +240,12 @@ d = SpreeMigrateDB::SchemaDefinition.define "Spree Version 0.50.0" do
     t.string   "payment_state"
     t.string   "email"
     t.text     "special_instructions"
+    t.string   "name"
+    t.boolean  "is_broadway_customer",                                             :default => false
+    t.string   "accountnumber"
+    t.datetime "checked_subscribe_at"
+    t.boolean  "add_to_mailing_list",                                              :default => true
+    t.datetime "viewed_at"
   end
 
   add_index "orders", ["number"], :name => "index_orders_on_number"
@@ -235,6 +302,15 @@ d = SpreeMigrateDB::SchemaDefinition.define "Spree Version 0.50.0" do
     t.integer "product_group_id"
   end
 
+  create_table "product_imports", :force => true do |t|
+    t.string   "data_file_file_name"
+    t.string   "data_file_content_type"
+    t.integer  "data_file_file_size"
+    t.datetime "data_file_updated_at"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
   create_table "product_option_types", :force => true do |t|
     t.integer  "product_id"
     t.integer  "option_type_id"
@@ -262,8 +338,16 @@ d = SpreeMigrateDB::SchemaDefinition.define "Spree Version 0.50.0" do
   add_index "product_scopes", ["name"], :name => "index_product_scopes_on_name"
   add_index "product_scopes", ["product_group_id"], :name => "index_product_scopes_on_product_group_id"
 
+  create_table "product_taxons", :force => true do |t|
+    t.datetime "created_at"
+    t.datetime "updated_at"
+    t.integer  "product_id"
+    t.integer  "taxon_id"
+    t.integer  "position",   :default => 1
+  end
+
   create_table "products", :force => true do |t|
-    t.string   "name",                 :default => "", :null => false
+    t.string   "name",                 :default => "",    :null => false
     t.text     "description"
     t.datetime "created_at"
     t.datetime "updated_at"
@@ -274,7 +358,11 @@ d = SpreeMigrateDB::SchemaDefinition.define "Spree Version 0.50.0" do
     t.datetime "deleted_at"
     t.string   "meta_description"
     t.string   "meta_keywords"
-    t.integer  "count_on_hand",        :default => 0,  :null => false
+    t.integer  "count_on_hand",        :default => 50000, :null => false
+    t.integer  "display_type",         :default => 2
+    t.text     "short_description"
+    t.text     "instructions"
+    t.boolean  "whatsnew"
   end
 
   add_index "products", ["available_on"], :name => "index_products_on_available_on"
@@ -329,6 +417,7 @@ d = SpreeMigrateDB::SchemaDefinition.define "Spree Version 0.50.0" do
     t.datetime "starts_at"
     t.string   "match_policy", :default => "all"
     t.string   "name"
+    t.boolean  "promote"
   end
 
   create_table "properties", :force => true do |t|
@@ -347,6 +436,25 @@ d = SpreeMigrateDB::SchemaDefinition.define "Spree Version 0.50.0" do
     t.string   "name"
     t.datetime "created_at"
     t.datetime "updated_at"
+  end
+
+  create_table "relation_types", :force => true do |t|
+    t.string   "name"
+    t.text     "description"
+    t.string   "applies_to"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  create_table "relations", :force => true do |t|
+    t.integer  "relation_type_id"
+    t.integer  "relatable_id"
+    t.string   "relatable_type"
+    t.integer  "related_to_id"
+    t.string   "related_to_type"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+    t.decimal  "discount_amount",  :precision => 8, :scale => 2, :default => 0.0
   end
 
   create_table "return_authorizations", :force => true do |t|
@@ -371,6 +479,16 @@ d = SpreeMigrateDB::SchemaDefinition.define "Spree Version 0.50.0" do
   add_index "roles_users", ["role_id"], :name => "index_roles_users_on_role_id"
   add_index "roles_users", ["user_id"], :name => "index_roles_users_on_user_id"
 
+  create_table "sessions", :force => true do |t|
+    t.string   "session_id", :null => false
+    t.text     "data"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "sessions", ["session_id"], :name => "index_sessions_on_session_id"
+  add_index "sessions", ["updated_at"], :name => "index_sessions_on_updated_at"
+
   create_table "shipments", :force => true do |t|
     t.integer  "order_id"
     t.integer  "shipping_method_id"
@@ -378,10 +496,11 @@ d = SpreeMigrateDB::SchemaDefinition.define "Spree Version 0.50.0" do
     t.datetime "created_at"
     t.datetime "updated_at"
     t.string   "number"
-    t.decimal  "cost",               :precision => 8, :scale => 2
+    t.decimal  "cost",                             :precision => 8, :scale => 2
     t.datetime "shipped_at"
     t.integer  "address_id"
     t.string   "state"
+    t.string   "fedex_account",      :limit => 50
   end
 
   add_index "shipments", ["number"], :name => "index_shipments_on_number"
@@ -398,6 +517,8 @@ d = SpreeMigrateDB::SchemaDefinition.define "Spree Version 0.50.0" do
     t.datetime "created_at"
     t.datetime "updated_at"
     t.string   "display_on"
+    t.boolean  "hide_shipping_cost", :default => false
+    t.integer  "display_order"
   end
 
   create_table "state_events", :force => true do |t|
@@ -437,6 +558,7 @@ d = SpreeMigrateDB::SchemaDefinition.define "Spree Version 0.50.0" do
     t.string   "name",       :null => false
     t.datetime "created_at"
     t.datetime "updated_at"
+    t.integer  "sort_order"
   end
 
   create_table "taxons", :force => true do |t|
@@ -454,6 +576,7 @@ d = SpreeMigrateDB::SchemaDefinition.define "Spree Version 0.50.0" do
     t.integer  "icon_file_size"
     t.datetime "icon_updated_at"
     t.text     "description"
+    t.text     "instructions"
   end
 
   add_index "taxons", ["parent_id"], :name => "index_taxons_on_parent_id"
@@ -476,6 +599,20 @@ d = SpreeMigrateDB::SchemaDefinition.define "Spree Version 0.50.0" do
     t.boolean  "active",       :default => true
     t.datetime "created_at"
     t.datetime "updated_at"
+  end
+
+  create_table "ups_shipping_methods", :force => true do |t|
+    t.string   "name"
+    t.string   "abbr"
+    t.integer  "shipping_method_id"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  create_table "ups_worldship_shipments", :force => true do |t|
+    t.string   "shipment_number", :limit => 35
+    t.string   "tracking_number", :limit => 35
+    t.datetime "created_at",                    :null => false
   end
 
   create_table "users", :force => true do |t|
@@ -508,20 +645,49 @@ d = SpreeMigrateDB::SchemaDefinition.define "Spree Version 0.50.0" do
 
   create_table "variants", :force => true do |t|
     t.integer  "product_id"
-    t.string   "sku",                                         :default => "",    :null => false
-    t.decimal  "price",         :precision => 8, :scale => 2,                    :null => false
-    t.decimal  "weight",        :precision => 8, :scale => 2
-    t.decimal  "height",        :precision => 8, :scale => 2
-    t.decimal  "width",         :precision => 8, :scale => 2
-    t.decimal  "depth",         :precision => 8, :scale => 2
+    t.string   "sku",                                            :default => "",    :null => false
+    t.decimal  "price",            :precision => 8, :scale => 2,                    :null => false
+    t.decimal  "weight",           :precision => 8, :scale => 2
+    t.decimal  "height",           :precision => 8, :scale => 2
+    t.decimal  "width",            :precision => 8, :scale => 2
+    t.decimal  "depth",            :precision => 8, :scale => 2
     t.datetime "deleted_at"
-    t.boolean  "is_master",                                   :default => false
-    t.integer  "count_on_hand",                               :default => 0,     :null => false
-    t.decimal  "cost_price",    :precision => 8, :scale => 2
+    t.boolean  "is_master",                                      :default => false
+    t.integer  "count_on_hand",                                  :default => 50000, :null => false
+    t.decimal  "cost_price",       :precision => 8, :scale => 2
     t.integer  "position"
+    t.integer  "stock_type",                                     :default => 2
+    t.boolean  "background_shade"
   end
 
   add_index "variants", ["product_id"], :name => "index_variants_on_product_id"
+
+  create_table "variants_promotion_rules", :id => false, :force => true do |t|
+    t.integer "variant_id"
+    t.integer "promotion_rule_id"
+  end
+
+  add_index "variants_promotion_rules", ["promotion_rule_id"], :name => "index_variants_promotion_rules_on_promotion_rule_id"
+  add_index "variants_promotion_rules", ["variant_id"], :name => "index_variants_promotion_rules_on_variant_id"
+
+  create_table "volume_prices", :force => true do |t|
+    t.integer  "variant_id"
+    t.string   "display"
+    t.string   "range"
+    t.decimal  "amount",     :precision => 8, :scale => 2
+    t.integer  "position"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "volume_prices", ["variant_id"], :name => "variant_id_index"
+
+  create_table "zip_code_ranges", :force => true do |t|
+    t.string   "start_zip"
+    t.string   "end_zip"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
 
   create_table "zone_members", :force => true do |t|
     t.integer  "zone_id"
@@ -538,7 +704,4 @@ d = SpreeMigrateDB::SchemaDefinition.define "Spree Version 0.50.0" do
     t.datetime "updated_at"
   end
 
-
-  
 end
-

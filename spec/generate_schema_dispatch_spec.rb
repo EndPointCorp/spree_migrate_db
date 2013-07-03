@@ -1,4 +1,4 @@
-require 'lib/spree_migrate_db/generate_schema_dispatch'
+require 'spec_helper'
 
 
 class TestDefinition

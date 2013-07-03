@@ -1,13 +1,14 @@
+require 'zlib'
 module SpreeMigrateDB
   class GenerateExportDispatch
 
-    def self.generate_migration_file(header, definition)
-      export = new(header, definition)
+    def self.generate_migration_file(header, definition, destination_dir)
+      export = new(header, definition, destination_dir)
       export.generate
       export.stats
     end
 
-    def initialize(header, definition)
+    def initialize(header, definition, destiniation_dir)
       @header = header
       @definition = definition
       @table_count = definition.tables.keys.size
@@ -15,7 +16,7 @@ module SpreeMigrateDB
       @total_row_count = 0
       @errors = []
       @warnings = []
-      @file_name = File.join(Rails.root, 'tmp', "#{definition.name.parameterize("_")}.stf")
+      @file_name = File.join(destiniation_dir, "#{definition.name.parameterize("_")}.stf")
     end
     
 

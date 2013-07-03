@@ -1,7 +1,7 @@
 module SpreeMigrateDB
   class CurrentSchemaDefinition
-    def self.generate
-      schema_file = File.join(Rails.root, "db/schema.rb")
+    class NoCurrentSchemaFileError < StandardError; end
+    def self.generate(schema_file)
       raise NoCurrentSchemaFileError.new ("No schema file found at #{schema_file}") unless File.exist?(schema_file)
 
       schema = File.read(schema_file)
