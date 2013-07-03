@@ -1,11 +1,11 @@
 # coding: utf-8
 lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'spree_db_migrate/version'
+require 'spree_migrate_db/version'
 
 Gem::Specification.new do |spec|
-  spec.name          = "spree_db_migrate"
-  spec.version       = SpreeDbMigrate::VERSION
+  spec.name          = "spree_migrate_db"
+  spec.version       = SpreeMigrateDB::VERSION
   spec.authors       = ["Mike Farmer"]
   spec.email         = ["mike.farmer@gmail.com"]
   spec.description   = %q{Migrate your Spree database from one version to another.}
