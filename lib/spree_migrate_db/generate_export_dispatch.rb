@@ -22,7 +22,7 @@ module SpreeMigrateDB
 
     def generate
       start_time = Time.now
-      puts "Export started."
+      UI.say "Export started."
 
       Zlib::GzipWriter.open @file_name do |gz|
         gz.write @header.to_json

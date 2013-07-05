@@ -93,7 +93,7 @@ module SpreeMigrateDB
       true
 
     rescue => e
-      puts "Unable to subscribe definition #{self.to_s}. #{e.message}"
+      UI.say "Unable to subscribe definition #{self.to_s}. #{e.message}"
       false
     end
 

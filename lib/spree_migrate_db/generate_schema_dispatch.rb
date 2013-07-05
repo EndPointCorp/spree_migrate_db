@@ -24,7 +24,7 @@ module SpreeMigrateDB
       end
       
       if already_defined
-        puts "Skipping #{definition.to_s}. Already a schema definition subscribed for that version (#{already_defined.to_s})"
+        UI.say "Skipping #{definition.to_s}. Already a schema definition subscribed for that version (#{already_defined.to_s})"
         already_defined
       else
         raise "Invalid" unless definition.respond_to? :to_hash

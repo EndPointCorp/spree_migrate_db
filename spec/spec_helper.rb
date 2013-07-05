@@ -13,7 +13,7 @@ isolate_from_rails do
   require 'ostruct'
 
   # swallow calls to Rails
-  class ::Rails
+  module ::Rails
     def self.root; File.expand_path("../", File.dirname(__FILE__)); end
     def self.method_missing(a,*b); self; end
   end
@@ -21,3 +21,4 @@ isolate_from_rails do
 end
 
 require_relative '../lib/spree_migrate_db'
+SpreeMigrateDB::UI.disable
