@@ -1,7 +1,12 @@
+require 'active_record'
 require 'spec_helper'
+
 module SpreeMigrateDB
   describe GenerateExportDispatch do
-    let(:d) { CurrentSchemaDefinition.generate("spec/support/schema.rb") }
+    before { UI.enable }
+    after { UI.disable }
+
+    let(:d) { CurrentSchemaDefinition.generate("0.50.0","spec/support/schema.rb") }
 
     it "generates a migration file" do
       test_dir = File.join("spec/support")

@@ -6,7 +6,7 @@ module SpreeMigrateDB
     end
 
     it "runs an import" do
-      Runner.import("1.3.0", "spec/support/schema_1_3_0", "spec/support/test_migration.stf")
+      Runner.import("1.3.0", "spec/support/schema_1_3_0.rb", "spec/support/test_migration.stf")
     end
   end
 end

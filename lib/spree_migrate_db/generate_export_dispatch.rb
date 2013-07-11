@@ -1,4 +1,5 @@
 require 'zlib'
+require 'active_record' 
 module SpreeMigrateDB
   class GenerateExportDispatch
 
@@ -25,26 +26,25 @@ module SpreeMigrateDB
       UI.say "Export started."
 
       Zlib::GzipWriter.open @file_name do |gz|
-        gz.write @header.to_json
-        gz.write @definition.to_json
+        gz.puts @header.to_json
+        gz.puts @definition.to_json
 
         @definition.tables.keys.each do |table|
           tabledef = @definition.tables[table]
-          ar_class = initialize_table_object(table)
-          next unless ar_class
-          table_row_count = ar_class.count
-          prefix = "\rExporting table #{table} (#{table_row_count} rows)..."
+          
+          row_count = table_row_count(table)
+          prefix = "\rExporting table #{table} (#{row_count} rows)..."
 
           i = 0
-          print("\rQuerying #{table} for #{table_row_count} rows...")
-          ar_class.all.each do |r|
+          UI.print("\rQuerying #{table} for #{row_count} rows...")
+          table_rows(table).each do |r|
             write_row(gz, table, r)
             i += 1
-            percent = "#{((i/table_row_count.to_f) * 100).round}% "
-            print "#{prefix} #{percent}"
+            percent = "#{((i/row_count.to_f) * 100).round}% "
+            UI.print "#{prefix} #{percent}"
           end
 
-          print "#{prefix} done.\n"
+          UI.print "#{prefix} done.\n"
 
           #break if @total_row_count > 30000
         end
@@ -78,10 +78,23 @@ module SpreeMigrateDB
     end
 
     def write_row(gz, table, row)
-      gz.write({table: table, row: row}.to_json)
+      gz.puts({table: table, row: row}.to_json)
       @total_row_count += 1
     rescue => e
       @warnings <<  "Invalid row for table '#{table}' for id #{row.id}. #{e.class} --  #{e.message}"
+    end
+
+    def conn
+      @conn ||= ::ActiveRecord::Base.connection
+    end
+    
+    def table_row_count(table_name)
+      result = conn.execute("SELECT count(*) AS c FROM #{table_name}")
+      result.first["c"]
+    end
+
+    def table_rows(table_name)
+      conn.execute("SELECT * FROM #{table_name}")
     end
     
   end

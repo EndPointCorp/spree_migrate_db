@@ -60,23 +60,7 @@ module SpreeMigrateDB
       let(:d) { valid_schema_definition }
 
       it "returns a hash of the definition" do
-        d.to_hash.should == {
-          :version => '0.50.0',
-          :tables => { 
-            :users => [
-              {:column => :id, :type => :integer, :options => {:key => true} },
-              {:column => :name, :type => :string, :options => {}},
-              {:column => :email, :type => :string, :options => {}}
-            ], 
-            :products => [
-              {:column => :id, :type => :integer, :options => {:key => true} },
-              {:column => :name, :type => :string, :options => {}},
-            ]
-          },
-          :indexes => [
-            {:name => "users_name_idx", :table => :users, :fields => [:name], :options => {}}
-          ]
-        }
+        d.to_hash.should == valid_schema_hash
       end
     end
 
@@ -90,32 +74,47 @@ module SpreeMigrateDB
 
     end
 
-    # performs a subtraction diff where only missing elements from the 
-    # calling object are returned in the new 
-    #context "#diff when comparing two definitions" do
-      #it "returns an EmptyDefinition if they are the same"
-      #it "returns a new definition with table differences"
-      #it "returns a new definition with index differences"
-      #it "sets the version to a new version"
-      #it "sets the name to a diff specific name"
-    #end
 
+    context ".from_hash" do
+      it "creates a new instance based on a passed hash" do
+        sd = SchemaDefinition.from_hash valid_schema_hash
 
-    def valid_schema_definition
-      SchemaDefinition.define("test") do
-        version "0.50.0"
-        create_table :users do |t|
-          t.column :id, :integer, {:key => true}
-          t.column :name, :string
-          t.column :email, :string
-        end
-        create_table :products do |t| 
-          t.column :id, :integer, {:key => true}
-          t.column :name, :string
-        end
+        sd.should be_kind_of SchemaDefinition
+        sd.should == valid_schema_definition
+      end
 
-        add_index :users, [:name], "users_name_idx"
+      it "returns an error if there is a problem parsing the hash" do
+        invalid_schema_hash = valid_schema_hash
+        invalid_schema_hash[:tables] = "invalid"
+        expect {
+          SchemaDefinition.from_hash invalid_schema_hash
+        }.to raise_error SchemaDefinition::InvalidSchemaHashError
+      end
+
+      it "returns an error if a key is missing" do
+        expect {
+          SchemaDefinition.from_hash({:version => "0"})
+        }.to raise_error SchemaDefinition::InvalidSchemaHashError
       end
     end
+
+    context "#compare" do
+      it "creates a SchemaDefinitionDiff object"  do
+        d = SchemaDefinition.from_hash(valid_schema_hash)
+        d.compare(valid_schema_definition).should be_kind_of SchemaDefinitionDiff
+      end
+    end
+
+
+    context "accessors" do
+      let(:d) { valid_schema_definition }
+
+      it "returns a list of table defs" do
+        d.table_defs.map(&:name).should == [:users, :products]
+      end
+
+    end
+
+
   end
 end
