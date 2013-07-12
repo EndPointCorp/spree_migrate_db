@@ -43,7 +43,7 @@ module SpreeMigrateDB
         i = d.add_index(:users, [:name], "nameidx")
         i.name.should == "nameidx"
         i.table.should == :users
-        i.fields.should == [:name]
+        i.fields.should == ["name"]
       end
     end
 
@@ -80,7 +80,8 @@ module SpreeMigrateDB
         sd = SchemaDefinition.from_hash valid_schema_hash
 
         sd.should be_kind_of SchemaDefinition
-        sd.should == valid_schema_definition
+        sd.to_hash.should == valid_schema_definition.to_hash
+        #sd.should == valid_schema_definition
       end
 
       it "returns an error if there is a problem parsing the hash" do
@@ -111,6 +112,10 @@ module SpreeMigrateDB
 
       it "returns a list of table defs" do
         d.table_defs.map(&:name).should == [:users, :products]
+      end
+
+      it "returns a table definition for a given table" do
+
       end
 
     end

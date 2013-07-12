@@ -56,13 +56,13 @@ module SpreeMigrateDB
 
         idx3.current == :not_found
         idx3.export.table.should == :products
-        idx3.export.fields.should == [:price]
+        idx3.export.fields.should == ["price"]
         idx3.options.should be_empty
         idx3.action.should == :create
 
         idx4.current.table.should == :spree_users
         idx4.export.table.should == :users
-        idx4.options[:new].should == [:email]
+        idx4.options[:new].should == ["email"]
         idx4.action.should == :recreate
 
         idx5.current.table.should == :spree_variants
@@ -74,65 +74,76 @@ module SpreeMigrateDB
 
       end
 
-      it "returns a list of field map_items"
+      it "returns a list of field map_items" do
+        #ap "running?"
+        #ap sdd.mapping[:fields]
+
+      end
       
     end
 
 
     def current_schema_definition
-      h = HashWithIndifferentAccess.new({
+      h = {
         :name => "current schema",
         :version => '1.3.x',
-        :tables => { 
-          :spree_users => [
+        :tables => [{
+          :name => "spree_users",
+          :fields => [
             {:column => :id, :type => :integer, :options => {:key => true} },
             {:column => :name, :type => :string, :options => {}},
-          ], 
-          :spree_products => [
+          ]}, {
+          :name => "spree_products",
+          :fields => [
             {:column => :id, :type => :integer, :options => {:key => true} },
             {:column => :name, :type => :string, :options => {}},
             {:column => :price, :type => :string, :options => {}},
-          ],
-          :spree_variants => [
+          ]}, {
+          :name => "spree_variants",
+          :fields => [
             {:column => :id, :type => :integer, :options => {:key => true} },
             {:column => :sku, :type => :string, :options => {}}
-          ]
-          },
+          ]}
+        ],
         :indexes => [
           {:name => "spree_users_name_idx", :table => :spree_users, :fields => [:name], :options => {}},
           {:name => "spree_products_name_idx", :table => :spree_products, :fields => [:name], :options => {}},
           {:name => "spree_variants_sku_idx", :table => :spree_variants, :fields => [:name], :options => {}}
         ]
-        })
+        }
 
       SchemaDefinition.from_hash h
     end
 
 
     def other_schema_definition
-      h = HashWithIndifferentAccess.new({
+      h = {
         :name => "other schema",
         :version => '0.5.0',
-        :tables => { 
-          :users => [
+        :tables => [{
+          :name => "users",
+          :fields => [
             {:column => :id, :type => :integer, :options => {:key => true} },
             {:column => :name, :type => :string, :options => {}},
             {:column => :email, :type => :string, :options => {}},
-          ], 
-          :products => [
+          ]}, {
+          :name => "products",
+          :fields => [
             {:column => :id, :type => :integer, :options => {:key => true} },
             {:column => :name, :type => :string, :options => {}},
             {:column => :price, :type => :string, :options => {}},
-          ],
-          :variants => [
+          ]}, {
+          :name => "variants",
+          :fields => [
             {:column => :id, :type => :integer, :options => {:key => true} },
             {:column => :sku, :type => :string, :options => {}}
-          ],
-          :custom_table => [
+          ]}, {
+          :name => "custom_table",
+          :fields => [
             {:column => :id, :type => :integer, :options => {:key => true} },
             {:column => :custom, :type => :string, :options => {}}
-          ]
-          },
+          ]}
+        ],
         :indexes => [
           {:name => "users_name_idx", :table => :users, :fields => [:name, :email], :options => {}},
           {:name => "products_name_idx", :table => :products, :fields => [:name], :options => {}},
@@ -140,7 +151,7 @@ module SpreeMigrateDB
           {:name => "variants_sku_idx", :table => :variants, :fields => [:name], :options => {}},
           {:name => "custom_idx", :table => :custom_table, :fields => [:custom], :options => {:unique => true}},
         ]
-        })
+        }
 
       SchemaDefinition.from_hash h
     end

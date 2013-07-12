@@ -1,3 +1,4 @@
+require 'ext/extensions'
 require 'spree_migrate_db/version'
 require 'spree_migrate_db/canonical_spree'
 require 'spree_migrate_db/ui'

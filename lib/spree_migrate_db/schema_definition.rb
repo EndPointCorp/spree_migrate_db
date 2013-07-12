@@ -1,7 +1,7 @@
 module SpreeMigrateDB
   FieldDef = Struct.new(:table, :column, :type, :options) do
-    def to_h
-      HashWithIndifferentAccess.new Hash[self.each_pair.to_a]
+    def to_s
+      "#{table}.#{column}"
     end
   end
 
@@ -10,9 +10,9 @@ module SpreeMigrateDB
       fields << FieldDef.new(self.name, name, type, opts)
     end
 
-    def to_h
-      HashWithIndifferentAccess.new({name => fields.map{|f| f.to_h}})
-    end
+    #def to_h
+      #{name => fields.map{|f| f.to_h}}.deep_symbolize_keys
+    #end
 
     def method_missing(meth, *args)
       if %w[ string integer decimal datetime boolean text ].include? meth.to_s
@@ -29,9 +29,9 @@ module SpreeMigrateDB
   end
 
   IndexDef = Struct.new(:name, :table, :fields, :options) do
-    def to_h
-      HashWithIndifferentAccess.new Hash[self.each_pair.to_a]
-    end
+    #def to_h
+      #Hash[self.each_pair.to_a].deep_symbolize_keys
+    #end
 
     def to_s
       "#{table}.[#{fields.join(",")}]"
@@ -41,13 +41,14 @@ module SpreeMigrateDB
   class SchemaDefinition
     class InvalidSchemaHashError < StandardError; end
 
-
-
     def self.from_hash(schema_hash)
-      h = HashWithIndifferentAccess.new(schema_hash)
+      h = schema_hash
       d = new h.fetch(:name)
       d.version h.fetch(:version)
-      h.fetch(:tables).each do |table, columns|
+      h.fetch(:tables).each do |table_spec|
+        table = table_spec.fetch(:name)
+        columns = table_spec.fetch(:fields)
+        
         d.create_table table do |t|
           columns.each do |c|
             t.column c.fetch(:column), c.fetch(:type), c.fetch(:options)
@@ -105,7 +106,7 @@ module SpreeMigrateDB
     end
 
     def add_index(table, fields, name, options={})
-      i = IndexDef.new(name, table, fields, options)
+      i = IndexDef.new(name, table, fields.map(&:to_s), options)
       @indexes << i
       i
     end
@@ -129,17 +130,21 @@ module SpreeMigrateDB
       @table_defs ||= @tables.map { |t, td| td }
     end
 
+    def lookup_table(table_name)
+      @tables.fetch(table_name.to_sym) { TableDef.new(table_name, []) }
+    end
+
     def check_namespaced
       table_defs.any? { |t| t.canonical? && t.namespaced? }
     end
 
     def to_hash
-      HashWithIndifferentAccess.new({
+      {
         :name => @name,
         :version => @spree_version,
-        :tables => tables_hash,
+        :tables => tables_list,
         :indexes => @indexes.map {|indexdef| indexdef.to_h }
-      })
+      }.deep_symbolize_keys
     end
 
     def compare(other_definition)
@@ -161,12 +166,12 @@ module SpreeMigrateDB
 
     private
 
-    def tables_hash
-      h = {}
+    def tables_list
+      l = []
       @tables.values.each do |tabledef|
-        h.merge! tabledef.to_h
+        l << tabledef.to_h
       end
-      HashWithIndifferentAccess.new h
+      l
     end
 
   end

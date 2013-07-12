@@ -38,23 +38,25 @@ def valid_schema_definition
 end
 
 def valid_schema_hash
-  HashWithIndifferentAccess.new({
+  {
     :name => "test",
     :version => '0.50.0',
-    :tables => { 
-    :users => [
-      {:column => :id, :type => :integer, :options => {:key => true} },
-      {:column => :name, :type => :string, :options => {}},
-      {:column => :email, :type => :string, :options => {}}
-  ], 
-    :products => [
-      {:column => :id, :type => :integer, :options => {:key => true} },
-      {:column => :name, :type => :string, :options => {}},
-  ]
-  },
+    :tables => [{
+      :name => "users",
+      :fields => [
+        {:table => "users", :column => "id", :type => "integer", :options => {:key => true} },
+        {:table => "users", :column => "name", :type => "string", :options => {}},
+        {:table => "users", :column => "email", :type => "string", :options => {}}
+      ]},{
+      :name => "products",
+      :fields => [
+        {:table => "products", :column => "id", :type => "integer", :options => {:key => true} },
+        {:table => "products", :column => "name", :type => "string", :options => {}},
+      ]}, 
+    ],
     :indexes => [
-      {:name => "users_name_idx", :table => :users, :fields => [:name], :options => {}}
+      {:name => "users_name_idx", :table => "users", :fields => ["name"], :options => {}}
   ]
-  })
+  }
 end
 
