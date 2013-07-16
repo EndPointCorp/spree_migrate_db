@@ -60,7 +60,7 @@ module SpreeMigrateDB
       let(:d) { valid_schema_definition }
 
       it "returns a hash of the definition" do
-        d.to_hash.should == valid_schema_hash
+        d.to_hash.should == valid_schema_hash.deep_symbolize_keys
       end
     end
 

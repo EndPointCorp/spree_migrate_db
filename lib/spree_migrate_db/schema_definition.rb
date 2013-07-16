@@ -26,7 +26,6 @@ module SpreeMigrateDB
   end
 
   IndexDef = DefStruct.new(:name, :table, :fields, :options) do
-
     def to_s
       "#{table}.[#{fields.join(",")}]"
     end

@@ -39,23 +39,23 @@ end
 
 def valid_schema_hash
   {
-    :name => "test",
-    :version => '0.50.0',
-    :tables => [{
-      :name => "users",
-      :fields => [
-        {:table => "users", :column => "id", :type => "integer", :options => {:key => true} },
-        {:table => "users", :column => "name", :type => "string", :options => {}},
-        {:table => "users", :column => "email", :type => "string", :options => {}}
+    "name" => "test",
+    "version" => '0.50.0',
+    "tables" => [{
+      "name" => "users",
+      "fields" => [
+        {"table" => "users", "column" => "id", "type" => "integer", "options" => {"key" => true} },
+        {"table" => "users", "column" => "name", "type" => "string", "options" => {}},
+        {"table" => "users", "column" => "email", "type" => "string", "options" => {}}
       ]},{
-      :name => "products",
-      :fields => [
-        {:table => "products", :column => "id", :type => "integer", :options => {:key => true} },
-        {:table => "products", :column => "name", :type => "string", :options => {}},
+      "name" => "products",
+      "fields" => [
+        {"table" => "products", "column" => "id", "type" => "integer", "options" => {"key" => true} },
+        {"table" => "products", "column" => "name", "type" => "string", "options" => {}},
       ]}, 
     ],
-    :indexes => [
-      {:name => "users_name_idx", :table => "users", :fields => ["name"], :options => {}}
+    "indexes" => [
+      {"name" => "users_name_idx", "table" => "users", "fields" => ["name"], "options" => {}}
   ]
   }
 end

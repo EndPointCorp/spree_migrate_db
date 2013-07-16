@@ -8,6 +8,7 @@ class Hash
                 end
     new_value = case value
                 when Hash then value.deep_symbolize_keys
+                when Array then value.simplify_elements
                 else value
                 end
     result[new_key] = new_value
@@ -22,7 +23,8 @@ class Array
     self.map do |e|
       case e
       when Symbol then e.to_s
-      when Struct then e.to_h
+      when Struct then e.to_h.deep_symbolize_keys
+      when Hash then e.deep_symbolize_keys
       when Array then e.simplify_elements
       else e
       end
@@ -42,7 +44,7 @@ class DefStruct < Struct
       v = self[m]
       h[m] = case v
              when Symbol then v.to_s
-             when Struct then v.to_h
+             when Struct then v.to_h.deep_symbolize_keys
              when Array then v.simplify_elements
              else v
              end
