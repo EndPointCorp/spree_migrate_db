@@ -63,6 +63,7 @@ module SpreeMigrateDB
         idx4.current.table.should == :spree_users
         idx4.export.table.should == :users
         idx4.options[:new].should == ["email"]
+        idx4.options[:missing].should be_empty
         idx4.action.should == :recreate
 
         idx5.current.table.should == :spree_variants
@@ -70,13 +71,26 @@ module SpreeMigrateDB
         idx5.options[:new].should be_empty
         idx5.options[:missing].should be_empty
         idx5.action.should == :ignore
-
-
       end
 
       it "returns a list of field map_items" do
-        #ap "running?"
-        #ap sdd.mapping[:fields]
+        sdd.mapping[:fields].count.should == 10
+        mappings = sdd.mapping[:fields].sort.map do |m|
+          m.as_question
+        end
+
+        mappings.should == [
+          "custom_table.custom -> no_table :: skip",
+          "custom_table.id -> no_table :: skip",
+          "spree_products.id -> spree_products.id :: ignore",
+          "spree_products.name -> spree_products.name :: ignore",
+          "spree_products.price -> spree_products.price :: ignore",
+          "spree_users.email -> no_field :: create",
+          "spree_users.id -> spree_users.id :: ignore",
+          "spree_users.name -> spree_users.name :: ignore",
+          "spree_variants.id -> spree_variants.id :: ignore",
+          "spree_variants.sku -> spree_variants.sku :: ignore",
+        ]
 
       end
       

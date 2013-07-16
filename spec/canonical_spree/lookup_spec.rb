@@ -20,5 +20,18 @@ module SpreeMigrateDB::CanonicalSpree
 
     end
 
+    it "returns a list of fields that have the table name converted to the canonical name" do
+      l = Lookup.new("1.3.0-stable")
+
+      test_fields = []
+      test_fields << SpreeMigrateDB::FieldDef.new(:products, :id, :integer, {})
+      test_fields << SpreeMigrateDB::FieldDef.new(:variants, :id, :integer, {})
+
+      table_def = stub(:name => "test", :fields => test_fields)
+
+      c_fields = l.canonical_fields(table_def)
+      c_fields.first.table.should == "spree_products"
+      c_fields.last.table.should == "spree_variants"
+    end
   end
 end

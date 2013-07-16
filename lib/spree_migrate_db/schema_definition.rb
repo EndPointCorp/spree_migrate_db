@@ -1,18 +1,15 @@
 module SpreeMigrateDB
-  FieldDef = Struct.new(:table, :column, :type, :options) do
+  FieldDef = DefStruct.new(:table, :column, :type, :options) do
     def to_s
       "#{table}.#{column}"
     end
   end
 
-  TableDef = Struct.new(:name, :fields) do
+  TableDef = DefStruct.new(:name, :fields) do
     def column(name, type, opts={})
       fields << FieldDef.new(self.name, name, type, opts)
     end
 
-    #def to_h
-      #{name => fields.map{|f| f.to_h}}.deep_symbolize_keys
-    #end
 
     def method_missing(meth, *args)
       if %w[ string integer decimal datetime boolean text ].include? meth.to_s
@@ -28,10 +25,7 @@ module SpreeMigrateDB
 
   end
 
-  IndexDef = Struct.new(:name, :table, :fields, :options) do
-    #def to_h
-      #Hash[self.each_pair.to_a].deep_symbolize_keys
-    #end
+  IndexDef = DefStruct.new(:name, :table, :fields, :options) do
 
     def to_s
       "#{table}.[#{fields.join(",")}]"
@@ -42,7 +36,7 @@ module SpreeMigrateDB
     class InvalidSchemaHashError < StandardError; end
 
     def self.from_hash(schema_hash)
-      h = schema_hash
+      h = schema_hash.deep_symbolize_keys
       d = new h.fetch(:name)
       d.version h.fetch(:version)
       h.fetch(:tables).each do |table_spec|
@@ -100,9 +94,9 @@ module SpreeMigrateDB
     end
 
     def create_table(table_name, *args)
-      @tables[table_name] ||= TableDef.new(table_name, [])
-      yield @tables[table_name]
-      @tables[table_name]
+      @tables[table_name.to_sym] ||= TableDef.new(table_name, [])
+      yield @tables[table_name.to_sym]
+      @tables[table_name.to_sym]
     end
 
     def add_index(table, fields, name, options={})

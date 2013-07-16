@@ -31,7 +31,11 @@ class Array
 
 end
 
-class Struct
+class DefStruct < Struct
+
+  def <=>(other)
+    self.to_s <=> other.to_s
+  end
 
   def to_h
     hash = self.class.members.inject({}) do |h, m| 

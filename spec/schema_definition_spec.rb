@@ -115,6 +115,9 @@ module SpreeMigrateDB
       end
 
       it "returns a table definition for a given table" do
+        t = d.lookup_table("users")
+        t.name.should == :users
+        t.fields.map(&:column).sort.should == [:email, :id, :name]
 
       end
 

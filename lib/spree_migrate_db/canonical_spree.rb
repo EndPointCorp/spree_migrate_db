@@ -70,6 +70,13 @@ module SpreeMigrateDB
         version_table_lookup(table_name)
       end
 
+      # return an array of fields with the canonical table name
+      def canonical_fields(table_def)
+        table_def.fields.inject([]) do |fields, f|
+          fields << SpreeMigrateDB::FieldDef.new(canonical_table_name(f.table), f.column, f.type, f.options)
+        end
+      end
+
 
 
       private 

@@ -25,6 +25,7 @@ module SpreeMigrateDB
     end
 
   end
+
   TableMappingItem = Class.new(MappingItem) do
     def type
       :table
@@ -59,7 +60,7 @@ module SpreeMigrateDB
     end
 
     def <=>(other)
-      "#{export.table}.#{export.name}" <=> "#{other.export.table}.#{other.export.name}"
+      "#{export.table}#{export.name}" <=> "#{other.export.table}#{other.export.name}"
     end
 
     def action
@@ -80,7 +81,24 @@ module SpreeMigrateDB
     def type; :field; end
 
     def actions
-      @actions = [ :ignore, :create, :rename, :ignore ]
+      @actions = [ :create, :ignore, :skip ]
+    end
+
+    def <=>(other)
+      "#{self.export}#{self.current}" <=> "#{other.export}#{other.current}"
+    end
+
+    def action
+      return @action if @action
+      if current == :no_table
+        :skip
+      elsif current == :no_field
+        :create
+      elsif current == export
+        :ignore
+      else
+        :skip
+      end
     end
 
   end
@@ -196,23 +214,23 @@ module SpreeMigrateDB
         end
 
         
-        current_table = @current_schema.lookup_table(tm.current)
-        other_table = @other_schema.lookup_table(tm.export)
+        current_fields = canonical_lookup.canonical_fields(@current_schema.lookup_table(tm.current))
+        other_fields = canonical_lookup.canonical_fields(@other_schema.lookup_table(tm.export))
 
-        #ap current_table
-        #ap other_table
+        missing, new, same = compare_arrays(current_fields, other_fields)
 
-        missing, new, same = compare_arrays(current_table.fields, other_table.fields)
+        missing.each do |m|
+          mapping << FieldMappingItem.new(m, :default)
+        end
 
-        #ap "----"
-        #ap missing
-        #ap new
-        #ap same
-        #ap "----"
+        new.each do |d|
+          mapping << FieldMappingItem.new(:no_field, d)
+        end
 
+        same.each do |s|
+          mapping << FieldMappingItem.new(s, s)
+        end
 
-        
-        
       end
 
       mapping
