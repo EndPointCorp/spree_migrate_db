@@ -80,8 +80,23 @@ module SpreeMigrateDB
   FieldMappingItem = Class.new(MappingItem) do
     def type; :field; end
 
+    def as_question
+     if (options && options.empty?) || options.nil?
+       opts = ""
+     else
+       opts = ""
+       options.each_pair do |k,v|
+         opts << "\n  -- #{k}: '#{v}'"
+       end
+       opts << "\n"
+     end
+       
+      
+      "#{export} -> #{current} :: #{action}#{opts}"
+    end
+
     def actions
-      @actions = [ :create, :ignore, :skip ]
+      @actions = [ :create, :ignore, :skip, :update ]
     end
 
     def <=>(other)
@@ -94,8 +109,10 @@ module SpreeMigrateDB
         :skip
       elsif current == :no_field
         :create
-      elsif current == export
+      elsif current == export && options.empty?
         :ignore
+      elsif current == export && ! options.empty?
+        :update
       else
         :skip
       end
@@ -214,21 +231,32 @@ module SpreeMigrateDB
         end
 
         
-        current_fields = canonical_lookup.canonical_fields(@current_schema.lookup_table(tm.current))
-        other_fields = canonical_lookup.canonical_fields(@other_schema.lookup_table(tm.export))
+        current_fields = canonical_lookup.canonical_fields(@current_schema.lookup_table(tm.current)).simplify_elements
+        other_fields = canonical_lookup.canonical_fields(@other_schema.lookup_table(tm.export)).simplify_elements
 
-        missing, new, same = compare_arrays(current_fields, other_fields)
+        missing, new, same, all = compare_arrays(current_fields, other_fields)
 
         missing.each do |m|
-          mapping << FieldMappingItem.new(m, :default)
+          # compare the options
+          el1, el2 = all.select{|el| el.to_s == m.to_s}
+          if el2
+            new_opts = el1.options.merge el2.options
+            export = m
+          else
+            new_opts = {}
+            export = :default
+          end
+          
+          mapping << FieldMappingItem.new(m, export, new_opts)
         end
 
         new.each do |d|
-          mapping << FieldMappingItem.new(:no_field, d)
+          el1, el2 = all.select{|el| el.to_s == d.to_s}
+          mapping << FieldMappingItem.new(:no_field, d) unless el2
         end
 
         same.each do |s|
-          mapping << FieldMappingItem.new(s, s)
+          mapping << FieldMappingItem.new(s, s, {})
         end
 
       end
@@ -240,8 +268,9 @@ module SpreeMigrateDB
       missing = arr1 - arr2
       new = arr2 - arr1
       same = arr1 & arr2
+      all = arr1 | arr2
 
-      [missing, new, same]
+      [missing, new, same, all]
     end
 
 

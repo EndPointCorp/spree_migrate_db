@@ -44,30 +44,30 @@ module SpreeMigrateDB
         idx1, idx2, idx3, idx4, idx5 = sdd.mapping[:indexes].sort
 
         idx1.current.should == :not_canonical
-        idx1.export.table.should == :custom_table
+        idx1.export.table.should == "custom_table"
         idx1.options.should be_empty
         idx1.action.should == :create
 
-        idx2.current.table.should == :spree_products
-        idx2.export.table.should == :products
+        idx2.current.table.should == "spree_products"
+        idx2.export.table.should == "products"
         idx2.options[:new].should be_empty
         idx2.options[:missing].should be_empty
         idx2.action.should == :ignore
 
         idx3.current == :not_found
-        idx3.export.table.should == :products
+        idx3.export.table.should == "products"
         idx3.export.fields.should == ["price"]
         idx3.options.should be_empty
         idx3.action.should == :create
 
-        idx4.current.table.should == :spree_users
-        idx4.export.table.should == :users
+        idx4.current.table.should == "spree_users"
+        idx4.export.table.should == "users"
         idx4.options[:new].should == ["email"]
         idx4.options[:missing].should be_empty
         idx4.action.should == :recreate
 
-        idx5.current.table.should == :spree_variants
-        idx5.export.table.should == :variants
+        idx5.current.table.should == "spree_variants"
+        idx5.export.table.should == "variants"
         idx5.options[:new].should be_empty
         idx5.options[:missing].should be_empty
         idx5.action.should == :ignore
@@ -87,9 +87,9 @@ module SpreeMigrateDB
           "spree_products.price -> spree_products.price :: ignore",
           "spree_users.email -> no_field :: create",
           "spree_users.id -> spree_users.id :: ignore",
-          "spree_users.name -> spree_users.name :: ignore",
+          "spree_users.name -> spree_users.name :: update\n  -- unique: 'true'\n  -- default: 'nobody'\n",
           "spree_variants.id -> spree_variants.id :: ignore",
-          "spree_variants.sku -> spree_variants.sku :: ignore",
+          "spree_variants.sku -> spree_variants.sku :: ignore"
         ]
 
       end
@@ -105,7 +105,7 @@ module SpreeMigrateDB
           :name => "spree_users",
           :fields => [
             {:column => :id, :type => :integer, :options => {:key => true} },
-            {:column => :name, :type => :string, :options => {}},
+            {:column => :name, :type => :string, :options => {:unique => true}},
           ]}, {
           :name => "spree_products",
           :fields => [
@@ -138,8 +138,8 @@ module SpreeMigrateDB
           :name => "users",
           :fields => [
             {:column => :id, :type => :integer, :options => {:key => true} },
-            {:column => :name, :type => :string, :options => {}},
-            {:column => :email, :type => :string, :options => {}},
+            {:column => :name, :type => :string, :options => {:default => "nobody"}},
+            {:column => :email, :type => :string, :options => {:default => "bob@example.com"}},
           ]}, {
           :name => "products",
           :fields => [

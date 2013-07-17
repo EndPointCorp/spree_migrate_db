@@ -3,6 +3,14 @@ module SpreeMigrateDB
     def to_s
       "#{table}.#{column}"
     end
+
+    def ==(other)
+      if other.kind_of? FieldDef
+        to_s == other.to_s
+      else
+        false
+      end
+    end
   end
 
   TableDef = DefStruct.new(:name, :fields) do

@@ -1,6 +1,31 @@
 require 'spec_helper'
 
 module SpreeMigrateDB
+  describe FieldDef do
+
+    it "is equal to another FieldDef with the field and column name" do
+      f1 = FieldDef.new("table", "column", :integer, {})
+      f2 = FieldDef.new("table", "column", "integer", {})
+
+      f1.should == f2
+    end
+
+    it "is not equal to another FieldDef with different field and column names" do
+      f1 = FieldDef.new("table", "column", :integer, {})
+      f2 = FieldDef.new("table", "column2", "integer", {})
+
+      f1.should_not == f2
+    end
+
+    it "is not equal to something of another type" do
+      f1 = FieldDef.new("table", "column", :integer, {})
+
+      f1.should_not == "table.column"
+    end
+
+  end
+
+
   describe SchemaDefinition do 
     context "define" do
       it "takes a block that passes an instance of itself" do
@@ -56,11 +81,11 @@ module SpreeMigrateDB
       end
     end
 
-    context "#to_hash" do
+    context "#to_json" do
       let(:d) { valid_schema_definition }
 
-      it "returns a hash of the definition" do
-        d.to_hash.should == valid_schema_hash.deep_symbolize_keys
+      it "returns the definition as json" do
+        d.to_json.should == valid_schema_hash.to_json
       end
     end
 
@@ -81,7 +106,6 @@ module SpreeMigrateDB
 
         sd.should be_kind_of SchemaDefinition
         sd.to_hash.should == valid_schema_definition.to_hash
-        #sd.should == valid_schema_definition
       end
 
       it "returns an error if there is a problem parsing the hash" do
