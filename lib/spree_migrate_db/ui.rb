@@ -18,6 +18,14 @@ module SpreeMigrateDB
       $stdout.print message
     end
 
+    def self.ask_text(question, default=false)
+      return default if @disabled
+      default_answer = default ? " (#{default})" : ""
+      print "#{question}#{default_answer}: "
+      answer = $stdin.gets.chomp
+      answer.empty? ? default : answer
+    end
+
     def self.ask(question, options=["y","n"], default=false)
       original_options = options.dup
       options.map! {|o| o[0].upcase }
@@ -33,7 +41,7 @@ module SpreeMigrateDB
       elsif default && response.ord == 13 # Enter
         return default
       else
-        ask(question, original_options)
+        ask(question, original_options, default)
       end
     end
 
@@ -60,6 +68,7 @@ module SpreeMigrateDB
     def self.map_menu(schema_diff)
       say "-"*70
       say " Spree DB Migration - Mapping ".center(70, "-")
+      say "-"*70
 
       if schema_diff.has_saved_mapping?
         use_mapping = ask "Use previous mapping (#{schema_diff.saved_mapping_file})?"
@@ -69,28 +78,31 @@ module SpreeMigrateDB
         end
       end
 
-      say "-"*70
-      say " Table Mapping ".center(70, "-")
-      say "-"*70
-      schema_diff.mapping[:tables].each do |mt|
-        mt.save_action ask(mt.as_question, mt.question_opts, :default)
+      best_guess = ask "Use best guess mapping?"
+
+      if best_guess == "N"
+        say "-"*70
+        say " Table Mapping ".center(70, "-")
+        say "-"*70
+        schema_diff.mapping[:tables].each do |mt|
+          mt.save_action ask(mt.as_question, mt.question_opts, :default)
+        end
+
+        say "-"*70
+        say " Fields Mapping ".center(70, "-")
+        say "-"*70
+        schema_diff.mapping[:fields].each do |mf|
+          mf.save_action ask(mf.as_question, mf.question_opts, :default)
+        end
+
+        say "-"*70
+        say " Indexes Mapping ".center(70, "-")
+        say "-"*70
+        schema_diff.mapping[:indexes].each do |mf|
+          mf.save_action ask(mf.as_question, mf.question_opts, :default)
+        end
       end
 
-      say "-"*70
-      say " Fields Mapping ".center(70, "-")
-      say "-"*70
-      schema_diff.mapping[:fields].each do |mf|
-        mf.save_action ask(mf.as_question, mf.question_opts, :default)
-      end
-
-      say "-"*70
-      say " Indexes Mapping ".center(70, "-")
-      say "-"*70
-      schema_diff.mapping[:indexes].each do |mf|
-        mf.save_action ask(mf.as_question, mf.question_opts, :default)
-      end
-
-      say "-"*70
       save_mapping = ask("Save this mapping?")
 
       if save_mapping == "Y"
@@ -102,8 +114,25 @@ module SpreeMigrateDB
       schema_diff
     end
 
-    def self.start_migration?(header, stats)
-      true
+    def self.start_migration?(rails_migration)
+      do_run = ask "Do you want to run migrations?", ["y", "n"], "N"
+      if do_run == "Y"
+        rails_migration.generate_migration_code
+        path = File.join("db/migrate")
+        path = ask_text "Path to migrations", path
+        rails_migration.generate_migration_file(path) 
+        review = ask "Review migration file?"
+        if review == "Y"
+          system "$PAGER #{rails_migration.rails_migration_file.path}"
+          if ask("Proceed?") == "N"
+            return false
+          end
+        end
+        rails_migration.run!
+        true
+      else
+        false
+      end
     end
 
     def self.display_stats(stats)

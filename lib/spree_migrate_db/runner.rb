@@ -24,34 +24,24 @@ module SpreeMigrateDB
       diff = current_definition.compare(import_definition)
       diff.mapping_dir = import_dir
 
-      mapping = UI.map_menu diff
+      updated_diff = UI.map_menu diff
 
-      rails_migration = RailsMigration.new(mapping)
+      rails_migration = RailsMigration.new(updated_diff.mapping)
 
-      if UI.start_migration? import_header, rails_migration.changes
-        rails_migration.run
+      if UI.start_migration? rails_migration
         stats = MigrationDataImport.run_import_file(import_file)
         UI.display_stats(stats)
       end
     rescue => e
       UI.say "FATAL ERROR IN IMPORT"
       UI.say e.message
+      puts e.message
+      puts e.backtrace.first(5).join("\n")
       false
     end
 
 
 
-    class RailsMigration
-      def initialize(mapping)
-      end
-      
-      def changes
-        {}
-      end
-
-      def run
-      end
-    end
 
     class MigrationDataImport
       def self.run_import_file(import_file)

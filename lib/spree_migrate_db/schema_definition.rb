@@ -11,13 +11,13 @@ module SpreeMigrateDB
         false
       end
     end
+
   end
 
   TableDef = DefStruct.new(:name, :fields) do
     def column(name, type, opts={})
       fields << FieldDef.new(self.name, name, type, opts)
     end
-
 
     def method_missing(meth, *args)
       if %w[ string integer decimal datetime boolean text ].include? meth.to_s
@@ -31,12 +31,26 @@ module SpreeMigrateDB
       name
     end
 
+    def ==(other)
+      if other === TableDef
+        self.to_s == other.to_s
+      else
+        false
+      end
+    end
+
+    def !=(other)
+      ! self == other
+    end
+
+
   end
 
   IndexDef = DefStruct.new(:name, :table, :fields, :options) do
     def to_s
       "#{table}.[#{fields.join(",")}]"
     end
+
   end
 
   class SchemaDefinition
@@ -58,7 +72,7 @@ module SpreeMigrateDB
       end
 
       h.fetch(:indexes).each do |i|
-        d.add_index i.fetch(:table), i.fetch(:fields), i.fetch(:name), i.fetch(:options)
+        d.add_index i.fetch(:table), i.fetch(:fields), i.fetch(:name) { nil }, i.fetch(:options)
       end
       d
 
@@ -106,8 +120,19 @@ module SpreeMigrateDB
       @tables[table_name.to_sym]
     end
 
-    def add_index(table, fields, name, options={})
-      i = IndexDef.new(name, table, fields.map(&:to_s), options)
+    def add_index(table, fields, name={}, options={})
+      # sometimes the options are passed after the fields and 
+      # sometimes the name is passed after the fields.
+      # This little code helps figure that out
+      index_options = options
+      index_name = nil
+      if name.kind_of? String
+        index_name = name
+      elsif name.kind_of? Hash
+        index_options = name
+      end
+    
+      i = IndexDef.new(index_name, table, fields.map(&:to_s), index_options)
       @indexes << i
       i
     end
@@ -133,6 +158,10 @@ module SpreeMigrateDB
 
     def lookup_table(table_name)
       @tables.fetch(table_name.to_sym) { TableDef.new(table_name, []) }
+    end
+
+    def lookup_table_by_table_def(table_def) 
+      lookup_table(table_def.name)
     end
 
     def check_namespaced

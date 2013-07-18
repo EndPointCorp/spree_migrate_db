@@ -24,17 +24,29 @@ module SpreeMigrateDB
 
       it "returns a list of table map_items" do
         sdd.mapping[:tables].count.should == 4
-        mi = sdd.mapping[:tables].first
-        mi.current.should == "spree_users"
-        mi.export.should == "users"
-        mi.type.should == :table
-        mi.action.should == :rename
 
-        mi2 = sdd.mapping[:tables].last
-        mi2.current.should == :not_canonical
-        mi2.export.should == "custom_table"
-        mi2.type.should == :table
-        mi2.action.should == :create
+        mi1, mi2, mi3, mi4 = sdd.mapping[:tables].sort
+
+        mi1.current.name.should == :not_canonical
+        mi1.export.name.should == "custom_table"
+        mi1.options[:canonical].should == :not_canonical
+        mi1.action.should == :create
+
+        mi2.current.name.should == "spree_products"
+        mi2.export.name.should == "products"
+        mi2.options[:canonical].should == "spree_products"
+        mi2.action.should == :skip
+
+        mi3.current.name.should == "spree_users"
+        mi3.export.name.should == "users"
+        mi3.options[:canonical].should == "spree_users"
+        mi3.action.should == :skip
+
+        mi4.current.name.should == "spree_variants"
+        mi4.export.name.should == "variants"
+        mi4.options[:canonical].should == "spree_variants"
+        mi4.action.should == :skip
+
       end
 
       it "returns a list of index map_items" do
@@ -48,17 +60,18 @@ module SpreeMigrateDB
         idx1.options.should be_empty
         idx1.action.should == :create
 
-        idx2.current.table.should == "spree_products"
+        idx2.current == :not_found
         idx2.export.table.should == "products"
-        idx2.options[:new].should be_empty
-        idx2.options[:missing].should be_empty
-        idx2.action.should == :ignore
+        idx2.export.fields.should == ["price"]
+        idx2.options[:canonical_table_name].should == "spree_products"
+        idx2.action.should == :create
 
-        idx3.current == :not_found
+        idx3.current.table.should == "spree_products"
         idx3.export.table.should == "products"
-        idx3.export.fields.should == ["price"]
-        idx3.options.should be_empty
-        idx3.action.should == :create
+        idx3.options[:new].should be_empty
+        idx3.options[:missing].should be_empty
+        idx3.action.should == :skip
+
 
         idx4.current.table.should == "spree_users"
         idx4.export.table.should == "users"
@@ -70,26 +83,24 @@ module SpreeMigrateDB
         idx5.export.table.should == "variants"
         idx5.options[:new].should be_empty
         idx5.options[:missing].should be_empty
-        idx5.action.should == :ignore
+        idx5.action.should == :skip
       end
 
       it "returns a list of field map_items" do
-        sdd.mapping[:fields].count.should == 10
+        sdd.mapping[:fields].count.should == 8
         mappings = sdd.mapping[:fields].sort.map do |m|
           m.as_question
         end
 
         mappings.should == [
-          "custom_table.custom -> no_table :: skip",
-          "custom_table.id -> no_table :: skip",
-          "spree_products.id -> spree_products.id :: ignore",
-          "spree_products.name -> spree_products.name :: ignore",
-          "spree_products.price -> spree_products.price :: ignore",
+          "spree_products.id -> spree_products.id :: skip",
+          "spree_products.name -> spree_products.name :: skip",
+          "spree_products.price -> spree_products.price :: skip",
           "spree_users.email -> no_field :: create",
-          "spree_users.id -> spree_users.id :: ignore",
+          "spree_users.id -> spree_users.id :: skip",
           "spree_users.name -> spree_users.name :: update\n  -- unique: 'true'\n  -- default: 'nobody'\n",
-          "spree_variants.id -> spree_variants.id :: ignore",
-          "spree_variants.sku -> spree_variants.sku :: ignore"
+          "spree_variants.id -> spree_variants.id :: skip",
+          "spree_variants.sku -> spree_variants.sku :: skip"
         ]
 
       end
@@ -97,77 +108,5 @@ module SpreeMigrateDB
     end
 
 
-    def current_schema_definition
-      h = {
-        :name => "current schema",
-        :version => '1.3.x',
-        :tables => [{
-          :name => "spree_users",
-          :fields => [
-            {:column => :id, :type => :integer, :options => {:key => true} },
-            {:column => :name, :type => :string, :options => {:unique => true}},
-          ]}, {
-          :name => "spree_products",
-          :fields => [
-            {:column => :id, :type => :integer, :options => {:key => true} },
-            {:column => :name, :type => :string, :options => {}},
-            {:column => :price, :type => :string, :options => {}},
-          ]}, {
-          :name => "spree_variants",
-          :fields => [
-            {:column => :id, :type => :integer, :options => {:key => true} },
-            {:column => :sku, :type => :string, :options => {}}
-          ]}
-        ],
-        :indexes => [
-          {:name => "spree_users_name_idx", :table => :spree_users, :fields => [:name], :options => {}},
-          {:name => "spree_products_name_idx", :table => :spree_products, :fields => [:name], :options => {}},
-          {:name => "spree_variants_sku_idx", :table => :spree_variants, :fields => [:name], :options => {}}
-        ]
-        }
-
-      SchemaDefinition.from_hash h
-    end
-
-
-    def other_schema_definition
-      h = {
-        :name => "other schema",
-        :version => '0.5.0',
-        :tables => [{
-          :name => "users",
-          :fields => [
-            {:column => :id, :type => :integer, :options => {:key => true} },
-            {:column => :name, :type => :string, :options => {:default => "nobody"}},
-            {:column => :email, :type => :string, :options => {:default => "bob@example.com"}},
-          ]}, {
-          :name => "products",
-          :fields => [
-            {:column => :id, :type => :integer, :options => {:key => true} },
-            {:column => :name, :type => :string, :options => {}},
-            {:column => :price, :type => :string, :options => {}},
-          ]}, {
-          :name => "variants",
-          :fields => [
-            {:column => :id, :type => :integer, :options => {:key => true} },
-            {:column => :sku, :type => :string, :options => {}}
-          ]}, {
-          :name => "custom_table",
-          :fields => [
-            {:column => :id, :type => :integer, :options => {:key => true} },
-            {:column => :custom, :type => :string, :options => {}}
-          ]}
-        ],
-        :indexes => [
-          {:name => "users_name_idx", :table => :users, :fields => [:name, :email], :options => {}},
-          {:name => "products_name_idx", :table => :products, :fields => [:name], :options => {}},
-          {:name => "products_price_idx", :table => :products, :fields => [:price], :options => {}},
-          {:name => "variants_sku_idx", :table => :variants, :fields => [:name], :options => {}},
-          {:name => "custom_idx", :table => :custom_table, :fields => [:custom], :options => {:unique => true}},
-        ]
-        }
-
-      SchemaDefinition.from_hash h
-    end
   end
 end

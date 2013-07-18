@@ -32,17 +32,17 @@ module SpreeMigrateDB
     end
 
     def actions
-      @actions = [ :ignore, :create, :rename, :skip ]
+      @actions = [ :create, :rename, :skip ]
+    end
+
+    def <=>(other)
+      "#{export.name}" <=> "#{other.export.name}"
     end
 
     def action
       return @action if @action
-      if current == export
-        :ignore
-      elsif current == :not_canonical
+      if current.name == :not_canonical
         :create
-      elsif current != export
-        :rename
       else
         :skip
       end
@@ -55,8 +55,12 @@ module SpreeMigrateDB
       :index
     end
 
+    def canonical_table_name
+      @c_table_name ||= options.fetch(:canonical_table_name) { export.table }
+    end
+
     def actions
-      @actions = [ :ignore, :create, :recreate, :skip ]
+      @actions = [ :create, :recreate, :skip ]
     end
 
     def <=>(other)
@@ -68,13 +72,14 @@ module SpreeMigrateDB
       if current == :not_canonical || current == :not_found
         :create
       elsif options[:missing] && options[:new] && options[:missing].empty? && options[:new].empty?
-        :ignore
+        :skip
       elsif ! options.empty?
         :recreate
       else
         :skip
       end
     end
+
   end
 
   FieldMappingItem = Class.new(MappingItem) do
@@ -96,7 +101,7 @@ module SpreeMigrateDB
     end
 
     def actions
-      @actions = [ :create, :ignore, :skip, :update ]
+      @actions = [ :create, :skip, :update ]
     end
 
     def <=>(other)
@@ -109,8 +114,6 @@ module SpreeMigrateDB
         :skip
       elsif current == :no_field
         :create
-      elsif current == export && options.empty?
-        :ignore
       elsif current == export && ! options.empty?
         :update
       else
@@ -195,7 +198,8 @@ module SpreeMigrateDB
       mapping = []
       @other_schema.table_defs.each do |t|
         canonical_name = canonical_lookup.canonical_table_name(t.name)
-        mapping << TableMappingItem.new(canonical_name, t.name.to_s, {})
+        current_table = @current_schema.lookup_table(canonical_name)
+        mapping << TableMappingItem.new(current_table, t, {:canonical => canonical_name})
       end
 
       @table_mapping = mapping 
@@ -205,7 +209,6 @@ module SpreeMigrateDB
       mapping = []
       @other_schema.indexes.each do |i|
         table_name = canonical_lookup.canonical_table_name(i.table)
-
 
         if table_name == :not_canonical
           mapping << IndexMappingItem.new(table_name, i, {})
@@ -218,21 +221,11 @@ module SpreeMigrateDB
 
     def field_mappings
       mapping = []
-
       table_mappings.each do |tm|
-        next if tm.action == :skip
+        next if tm.action == :create
 
-        if tm.action == :create
-          other_table = @other_schema.lookup_table(tm.export)
-          other_table.fields.each do |f|
-            mapping << FieldMappingItem.new(:no_table, f)
-          end
-          next
-        end
-
-        
-        current_fields = canonical_lookup.canonical_fields(@current_schema.lookup_table(tm.current)).simplify_elements
-        other_fields = canonical_lookup.canonical_fields(@other_schema.lookup_table(tm.export)).simplify_elements
+        current_fields = canonical_lookup.canonical_fields(tm.current).simplify_elements
+        other_fields = canonical_lookup.canonical_fields(tm.export).simplify_elements
 
         missing, new, same, all = compare_arrays(current_fields, other_fields)
 
@@ -293,11 +286,15 @@ module SpreeMigrateDB
       unmatched = []
 
       if indexes_with_same_fields.empty?
-        unmatched << IndexMappingItem.new(:not_found, i, {})
+        unmatched << IndexMappingItem.new(:not_found, i, {:canonical_table_name => table_name})
       else
         indexes_with_same_fields.each do |ci|
           missing, new, same = compare_arrays(ci.fields, i.fields)
-          unmatched << IndexMappingItem.new(ci, i, {:missing => missing, :new => new})
+          unmatched << IndexMappingItem.new(ci, i, {
+            :canonical_table_name => table_name, 
+            :missing => missing, 
+            :new => new
+          })
         end
       end
       unmatched

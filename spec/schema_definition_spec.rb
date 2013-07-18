@@ -25,7 +25,6 @@ module SpreeMigrateDB
 
   end
 
-
   describe SchemaDefinition do 
     context "define" do
       it "takes a block that passes an instance of itself" do

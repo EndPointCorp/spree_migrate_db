@@ -9,6 +9,7 @@ require 'spree_migrate_db/generate_export_dispatch'
 require 'spree_migrate_db/generate_schema_dispatch'
 require 'spree_migrate_db/migration_file'
 require 'spree_migrate_db/runner'
+require 'spree_migrate_db/rails_migration'
 
 require 'spree_migrate_db/railtie' if defined?(Rails)
 

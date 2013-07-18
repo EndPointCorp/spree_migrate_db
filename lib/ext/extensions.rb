@@ -51,16 +51,23 @@ class DefStruct < Struct
   def to_h
     hash = self.class.members.inject({}) do |h, m| 
       v = self[m]
-      h[m] = case v
-             when Symbol then v.to_s
-             when Struct || DefStruct then v.to_h
-             when Array then v.simplify_elements
-             else v
-             end
-      h
+
+      new_v = case v
+              when Symbol then v.to_s
+              when Struct || DefStruct then v.to_h
+              when Array then v.simplify_elements
+              else v
+              end
+      if new_v.nil? 
+        h
+      else
+        h[m] = new_v
+        h
+      end
     end
 
     hash.deep_symbolize_keys
   end
+
 
 end
