@@ -155,12 +155,17 @@ module SpreeMigrateDB
   end
 
   RailsMigrationFile = Struct.new(:path, :body) do
+    def valid?
+      !path.empty? && !body.empty? && @saved
+    end
+
     def save!
       filename = File.expand_path(path)
       File.open(filename, "w") do |f|
         f.puts body
       end
       UI.say "Migration file saved to: #{filename}"
+      @saved = true
     end
   end
 
@@ -172,7 +177,7 @@ module SpreeMigrateDB
       @mapping_list = Array(mapping[:tables]) + Array(mapping[:fields]) + Array(mapping[:indexes])
       @up_changes = {:tables => [], :fields => [], :indexes => []}
       @down_changes = {:tables => [], :fields => [], :indexes => []}
-      @rails_migration_file = nil
+      @rails_migration_file = RailsMigrationFile.new("", "")
     end
 
     def generate_migration_code
@@ -215,13 +220,14 @@ class SpreeUpgrade < ActiveRecord::Migration
 end
       RUBY
 
-      @rails_migration_file = RailsMigrationFile.new(filename, filebody)
+      @rails_migration_file.path = filename
+      @rails_migration_file.body = filebody
       @rails_migration_file.save!
     end
 
     def run!
-      unless @rails_migration_file
-        UI.say "Migrations did not run." 
+      unless @rails_migration_file.valid?
+        UI.say "Migration file is invalid." 
         return
       end
 

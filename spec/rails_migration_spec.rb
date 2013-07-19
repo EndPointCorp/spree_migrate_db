@@ -23,7 +23,14 @@ module SpreeMigrateDB
       rm.rails_migration_file.body.should include "create_table"
     end
 
-    it "runs the migrations"
+    it "runs the migrations" do
+      rm = RailsMigration.new(mapping)
+      rm.generate_migration_code
+      rm.generate_migration_file("spec/support/migrations")
+      rake_task = stub(:rake_task, :invoke => true)
+      Rake::Task.should_receive(:[]).with('db:migrate') { rake_task }
+      rm.run!
+    end
 
     describe TableMigration do
       it "skips mappings that are marked not marked as create" do

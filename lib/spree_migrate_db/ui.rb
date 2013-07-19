@@ -115,6 +115,11 @@ module SpreeMigrateDB
     end
 
     def self.start_migration?(rails_migration)
+      unless rails_migration.rails_migration_file.valid?
+        say "The migration file has not been generated or is invalid."
+        return false
+      end
+
       do_run = ask "Do you want to run migrations?", ["y", "n"], "N"
       if do_run == "Y"
         rails_migration.generate_migration_code
