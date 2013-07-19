@@ -1,3 +1,4 @@
+require 'rake'
 module SpreeMigrateDB
   class StandardMigration
     attr_reader :up, :down
@@ -224,9 +225,7 @@ end
         return
       end
 
-
-      # do something
-      #
+      Rake::Task['db:migrate'].invoke
     end
 
 

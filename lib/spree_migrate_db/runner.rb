@@ -29,7 +29,7 @@ module SpreeMigrateDB
       rails_migration = RailsMigration.new(updated_diff.mapping)
 
       if UI.start_migration? rails_migration
-        stats = MigrationDataImport.run_import_file(import_file)
+        stats = MigrationDataImport.run_import_file(updated_diff.mapping, import_file)
         UI.display_stats(stats)
       end
     rescue => e
@@ -44,7 +44,7 @@ module SpreeMigrateDB
 
 
     class MigrationDataImport
-      def self.run_import_file(import_file)
+      def self.run_import_file(mapping, import_file)
         {
           :tables => 0,
           :indexes => 0,
