@@ -85,7 +85,7 @@ module SpreeMigrateDB
     end
 
     def conn
-      @conn ||= ::ActiveRecord::Base.connection
+      @conn ||= SourceDatabase.connection
     end
     
     def table_row_count(table_name)

@@ -1,4 +1,4 @@
-require 'rspec/autorun' unless ENV["no_rspec"]
+require 'rspec/autorun' 
 
 require 'awesome_print'
 require 'active_support/all'
@@ -11,10 +11,18 @@ module ::Rails
   def self.method_missing(a,*b); self; end
 end
 
+
+class SourceDatabase < ActiveRecord::Base
+  establish_connection({
+    :adapter => "sqlite3",
+    :database => "spec/support/spree_migrate_db_source.db"
+  })
+end
+
 ActiveRecord::Base.establish_connection({
-  :adapter => "sqlite3",
-  :database => "spec/support/spree_migrate_db_test.db"
-})
+    :adapter => "sqlite3",
+    :database => "spec/support/spree_migrate_db_target.db"
+  })
 
 
 require 'spree_migrate_db'

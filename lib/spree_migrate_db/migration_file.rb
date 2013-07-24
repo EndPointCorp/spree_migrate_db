@@ -20,6 +20,16 @@ module SpreeMigrateDB
         @definition
       end
 
+      def each_line
+        Zlib::GzipReader.open(@import_file) do |gz|
+          h = gz.readline
+          d = gz.readline
+          gz.each_line do |line|
+            yield parse_from_json(line)
+          end
+        end
+      end
+
       private
 
       def get_head

@@ -10,7 +10,7 @@ module SpreeMigrateDB
       :calculators => {:spree_1x => "spree_calculators", :spree_0x => "calculators"},
       :configurations => {:spree_1x => "spree_configurations", :spree_0x => "configurations"},
       :countries => {:spree_1x => "spree_countries", :spree_0x => "countries"},
-      :creditcards => {:spree_1x => "spree_creditcards", :spree_0x => "creditcards"},
+      :creditcards => {:spree_1x => "spree_credit_cards", :spree_0x => "creditcards"},
       :gateways => {:spree_1x => "spree_gateways", :spree_0x => "gateways"},
       :inventory_units => {:spree_1x => "spree_inventory_units", :spree_0x => "inventory_units"},
       :line_items => {:spree_1x => "spree_line_items", :spree_0x => "line_items"},

@@ -14,47 +14,40 @@ module SpreeMigrateDB
 
 
     def self.import(spree_version, schema_file, import_file)
-      UI.say "Starting database migration import for Spree #{spree_version}"
-      current_definition = CurrentSchemaDefinition.generate(spree_version, schema_file)
-      import_dir = File.dirname(import_file)
-      import_file = MigrationFile.new(import_file)
-      import_header = import_file.header
-      import_definition = import_file.definition
-
-      diff = current_definition.compare(import_definition)
-      diff.mapping_dir = import_dir
-
-      updated_diff = UI.map_menu diff
-
-      rails_migration = RailsMigration.new(updated_diff.mapping)
-
-      if UI.start_migration? rails_migration
-        stats = MigrationDataImport.run_import_file(updated_diff.mapping, import_file)
-        UI.display_stats(stats)
-      end
-    rescue => e
-      UI.say "FATAL ERROR IN IMPORT"
-      UI.say e.message
-      puts e.message
-      puts e.backtrace.first(5).join("\n")
-      false
+      scrappy = ScrappyImport.new(import_file)
+      scrappy.import!
     end
 
+    #def self.import(spree_version, schema_file, import_file)
+      #UI.say "Starting database migration import for Spree #{spree_version}"
+      #current_definition = CurrentSchemaDefinition.generate(spree_version, schema_file)
+      #import_dir = File.dirname(import_file)
+      #import_file = MigrationFile.new(import_file)
+      #import_header = import_file.header
+      #import_definition = import_file.definition
+
+      #diff = current_definition.compare(import_definition)
+      #diff.mapping_dir = import_dir
+
+      #updated_diff = UI.map_menu diff
+
+      #rails_migration = RailsMigration.new(updated_diff.mapping)
+
+      #if UI.start_migration? rails_migration
+        #stats = MigrationDataImport.run_import_file(updated_diff.mapping, import_file)
+        #UI.display_stats(stats)
+      #end
+    #rescue => e
+      #UI.say "FATAL ERROR IN IMPORT"
+      #UI.say e.message
+      #puts e.message
+      #puts e.backtrace.first(5).join("\n")
+      #false
+    #end
 
 
 
-    class MigrationDataImport
-      def self.run_import_file(mapping, import_file)
-        {
-          :tables => 0,
-          :indexes => 0,
-          :rows => 0,
-          :warnings => [],
-          :errors => [],
-          :seconds => 0.0
-        }
-      end
-    end
+
 
 
 

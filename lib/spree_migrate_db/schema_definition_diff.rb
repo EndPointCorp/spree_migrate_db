@@ -31,6 +31,14 @@ module SpreeMigrateDB
       :table
     end
 
+    def canonical_table_name
+      @c_table_name ||= begin
+                          t = options.fetch(:canonical) { export.name }
+                          t = export.name if t == :not_canonical
+                          t
+                        end
+    end
+
     def actions
       @actions = [ :create, :rename, :skip ]
     end

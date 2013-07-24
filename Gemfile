@@ -8,4 +8,5 @@ group :development, :test do
   gem 'sqlite3'
   gem 'awesome_print'
   gem 'rspec'
+  gem 'database_cleaner'
 end
