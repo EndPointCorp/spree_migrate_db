@@ -122,9 +122,9 @@ module SpreeMigrateDB
       @post_import_data ||= [
         {"table" => "shipping_categories", "row" => {"id" => 1, "name" => "Default"}},
 
-        {"table" => "states", "row" => {"id" => 1, "name" => "U.S. Armed Forces – Americas", "abbr" => "AA", "country_id" => "214"}},
-        {"table" => "states", "row" => {"id" => 2, "name" => "U.S. Armed Forces – Europe", "abbr"   => "AE", "country_id" => "214"}},
-        {"table" => "states", "row" => {"id" => 3, "name" => "U.S. Armed Forces – Pacific", "abbr"  => "AP", "country_id" => "214"}},
+        {"table" => "states", "row" => {"id" => 1, "name" => "U.S. Armed Forces - Americas", "abbr" => "AA", "country_id" => "214"}},
+        {"table" => "states", "row" => {"id" => 2, "name" => "U.S. Armed Forces - Europe", "abbr"   => "AE", "country_id" => "214"}},
+        {"table" => "states", "row" => {"id" => 3, "name" => "U.S. Armed Forces - Pacific", "abbr"  => "AP", "country_id" => "214"}},
 
         # Gift Card Product
         {"table" => "products", "row" => {
