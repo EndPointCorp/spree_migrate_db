@@ -17,4 +17,8 @@ require 'spree_migrate_db/railtie' if defined?(Rails)
 
 module SpreeMigrateDB
   UI.enable
+
+  unless defined?(SourceDatabase)
+    SourceDatabase = Class.new(ActiveRecord::Base)
+  end
 end

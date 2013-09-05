@@ -19,6 +19,7 @@ class SourceDatabase < ActiveRecord::Base
   })
 end
 
+
 ActiveRecord::Base.establish_connection({
     :adapter => "sqlite3",
     :database => "spec/support/spree_migrate_db_target.db"

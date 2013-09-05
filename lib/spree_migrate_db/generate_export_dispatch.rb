@@ -2,6 +2,7 @@ require 'zlib'
 require 'active_record' 
 module SpreeMigrateDB
   class GenerateExportDispatch
+    SKIP_TABLES = %w[sessions]
 
     def self.generate_migration_file(header, definition, destination_dir)
       export = new(header, definition, destination_dir)
@@ -30,6 +31,10 @@ module SpreeMigrateDB
         gz.puts @definition.to_json
 
         @definition.tables.keys.each do |table|
+          if SKIP_TABLES.include? table.to_s
+            puts "Skipping table #{table}"
+            next
+          end
           tabledef = @definition.tables[table]
           
           row_count = table_row_count(table)

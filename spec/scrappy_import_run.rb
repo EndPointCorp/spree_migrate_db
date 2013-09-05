@@ -24,9 +24,18 @@ ActiveRecord::Base.establish_connection({
 
 require 'spree_migrate_db'
 
+unless defined? Spree::Image
+  module Spree
+    Asset = Class.new(ActiveRecord::Base)
+    Asset.table_name = "spree_assets"
+    Image = Class.new(Asset)
+
+  end
+end
+
 module SpreeMigrateDB
 
-  scrappy = ScrappyImport.new("spec/support/test_migration.stf")
-  scrappy.import!
+  scrappy = ScrappyImport.new("spec/support/test_migration.stf", true)
+  scrappy.import_tables
 
 end
