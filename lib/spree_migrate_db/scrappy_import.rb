@@ -3,16 +3,18 @@ require "activerecord-import/base"
 require 'pp'
 module SpreeMigrateDB
   class ScrappyImport
-    # TODO:
-    # no description for shipping method calculators
+    COMMIT_THRESHOLD = 10000
+    DISPLAY_THRESHOLD = 2000
 
     INCLUDE_TABLES = %w[
-      gift_cards
+      promotions
     ]
+    #variants_promotion_rules
 
     # when loading the table specified as the key, also delete the tables in the array
     SIDE_POPULATED_TABLES = {
       :spree_variants => %w[ spree_prices ],
+      :spree_calculators => %w[ spree_promotion_actions ],
       :spree_gift_cards => %w[ 
         spree_products
         spree_variants
@@ -25,9 +27,9 @@ module SpreeMigrateDB
     }
 
     SKIP_TABLES = %w[ 
-      preferences product_groups product_groups_products product_imports 
-      product_scopes products_promotion_rules promotion_rules
-      promotions state_events ups_shipping_methods variants_promotion_rules
+      product_imports 
+      state_events ups_shipping_methods 
+      variants_promotion_rules
       zip_code_ranges
     ]
 
@@ -42,7 +44,8 @@ module SpreeMigrateDB
     end
 
     def import_tables(tables_list=INCLUDE_TABLES)
-      delete_rows tables_list.map {|t| lookup_table_name(t)} if @clean
+      canonical_tables_list = tables_list.map {|t| lookup_table_name(t)}
+      delete_rows canonical_tables_list
       puts "Starting import..."
 
       unless tables_list.empty?
@@ -62,6 +65,7 @@ module SpreeMigrateDB
 
         puts "importing post import data"
         post_import_data.each do |line|
+          next unless canonical_tables_list.include? line["table"]
           import_data(line)
         end
       end
@@ -176,6 +180,13 @@ module SpreeMigrateDB
         {"table" => "option_values_variants", "row" => { "variant_id" => 13004, "option_value_id" => 3004 }},
         {"table" => "option_values_variants", "row" => { "variant_id" => 13005, "option_value_id" => 3005 }},
         {"table" => "option_values_variants", "row" => { "variant_id" => 13006, "option_value_id" => 3006 }},
+
+        # Zip Code Ranges
+        {"table" => "spree_zip_code_ranges", "row" => { "id" => 1, "name" => "New York City", "start_zip" => "10001", "end_zip" => "10292" }},
+        {"table" => "spree_zip_code_ranges", "row" => { "id" => 2, "name" => "Bronx", "start_zip" => "10451", "end_zip" => "10499" }},
+        {"table" => "spree_zip_code_ranges", "row" => { "id" => 3, "name" => "Queens", "start_zip" => "11001", "end_zip" => "11697" }},
+        {"table" => "spree_zip_code_ranges", "row" => { "id" => 4, "name" => "Manhattan", "start_zip" => "10001", "end_zip" => "10292" }},
+        {"table" => "spree_zip_code_ranges", "row" => { "id" => 5, "name" => "Brooklyn", "start_zip" => "11201", "end_zip" => "11256" }},
       
       ]
     end
@@ -232,6 +243,7 @@ module SpreeMigrateDB
     end
 
     def fix_images
+      return if %W[spree_assets spree_products spree_variants] - @table_counts.keys == 0
       puts "Fixing images..."
       asset = ar_table("spree_assets")
       product = ar_table("spree_products")
@@ -248,47 +260,55 @@ module SpreeMigrateDB
 
     def remaps
       @remaps ||= {
-        "spree_addresses"              => lambda{ |row| row },
-        "spree_adjustments"            => lambda{ |row| remap_adjustments(row) },
-        "spree_assets"                 => lambda{ |row| remap_assets(row) },
-        "spree_calculators"            => lambda{ |row| remap_calculators(row) },
-        "spree_configurations"         => lambda{ |row| remap_configurations(row) },
-        "spree_countries"              => lambda{ |row| remap_countries(row) },
-        "spree_credit_cards"           => lambda{ |row| row },
-        "spree_gift_cards"             => lambda{ |row| remap_gift_cards(row) },
-        "spree_inventory_units"        => lambda{ |row| row },
-        "spree_line_items"             => lambda{ |row| remap_line_items(row) },
-        "spree_log_entries"            => lambda{ |row| remap_log_entries(row) },
-        "spree_mail_methods"           => lambda{ |row| row },
-        "spree_option_types"           => lambda{ |row| row },
-        "spree_option_values"          => lambda{ |row| remap_option_values(row) },
-        "spree_option_values_variants" => lambda{ |row| row },
-        "spree_orders"                 => lambda{ |row| remap_orders(row) },
-        "spree_payment_methods"        => lambda{ |row| remap_payment_methods(row) },
-        "spree_payments"               => lambda{ |row| remap_payments(row) },
-        "spree_prices"                 => lambda{ |row| row },
-        "spree_product_option_types"   => lambda{ |row| row },
-        "spree_product_properties"     => lambda{ |row| row },
-        "spree_products_taxons"        => lambda{ |row| remap_products_taxons(row) },
-        "spree_products"               => lambda{ |row| remap_products(row) },
-        "spree_properties"             => lambda{ |row| row },
-        "spree_roles"                  => lambda{ |row| row },
-        "spree_roles_users"            => lambda{ |row| row },
-        "spree_shipments"              => lambda{ |row| remap_shipments(row) },
-        "spree_shipping_categories"    => lambda{ |row| row },
-        "spree_shipping_methods"       => lambda{ |row| remap_shipping_methods(row) },
-        "spree_states"                 => lambda{ |row| remap_states(row) },
-        "spree_tax_categories"         => lambda{ |row| row },
-        "spree_tax_rates"              => lambda{ |row| row },
-        "spree_taxonomies"             => lambda{ |row| row },
-        "spree_taxons"                 => lambda{ |row| row },
-        "spree_tokenized_permissions"  => lambda{ |row| row },
-        "spree_trackers"               => lambda{ |row| row },
-        "spree_users"                  => lambda{ |row| row },
-        "spree_variants"               => lambda{ |row| remap_variants(row) },
-        "spree_volume_prices"          => lambda{ |row| remap_volume_prices(row) },
-        "spree_zone_members"           => lambda{ |row| remap_zone_members(row) },
-        "spree_zones"                  => lambda{ |row| remap_zones(row) },
+        "spree_activators"               => -> row { remap_activators(row) },
+        "spree_addresses"                => -> row { row },
+        "spree_adjustments"              => -> row { remap_adjustments(row) },
+        "spree_assets"                   => -> row { remap_assets(row) },
+        "spree_calculators"              => -> row { remap_calculators(row) },
+        "spree_configurations"           => -> row { remap_configurations(row) },
+        "spree_countries"                => -> row { remap_countries(row) },
+        "spree_credit_cards"             => -> row { row },
+        "spree_gift_cards"               => -> row { remap_gift_cards(row) },
+        "spree_inventory_units"          => -> row { row },
+        "spree_line_items"               => -> row { remap_line_items(row) },
+        "spree_log_entries"              => -> row { remap_log_entries(row) },
+        "spree_mail_methods"             => -> row { row },
+        "spree_option_types"             => -> row { row },
+        "spree_option_values"            => -> row { remap_option_values(row) },
+        "spree_option_values_variants"   => -> row { row },
+        "spree_orders"                   => -> row { remap_orders(row) },
+        "spree_payment_methods"          => -> row { remap_payment_methods(row) },
+        "spree_payments"                 => -> row { remap_payments(row) },
+        "spree_preferences"              => -> row { remap_preferences(row) },
+        "spree_prices"                   => -> row { row },
+        "spree_product_groups"           => -> row { row },
+        "spree_product_groups_products"  => -> row { row },
+        "spree_product_option_types"     => -> row { remap_product_option_types(row) },
+        "spree_product_properties"       => -> row { row },
+        "spree_products_promotion_rules" => -> row { remap_products_promotion_rules(row) },
+        "spree_products_taxons"          => -> row { remap_products_taxons(row) },
+        "spree_products"                 => -> row { remap_products(row) },
+        "spree_promotion_actions"        => -> row { row },
+        "spree_promotion_rules"          => -> row { remap_promotion_rules(row) },
+        "spree_properties"               => -> row { row },
+        "spree_roles"                    => -> row { row },
+        "spree_roles_users"              => -> row { row },
+        "spree_shipments"                => -> row { remap_shipments(row) },
+        "spree_shipping_categories"      => -> row { row },
+        "spree_shipping_methods"         => -> row { remap_shipping_methods(row) },
+        "spree_states"                   => -> row { remap_states(row) },
+        "spree_tax_categories"           => -> row { row },
+        "spree_tax_rates"                => -> row { remap_tax_rates(row) },
+        "spree_taxonomies"               => -> row { row },
+        "spree_taxons"                   => -> row { row },
+        "spree_tokenized_permissions"    => -> row { row },
+        "spree_trackers"                 => -> row { row },
+        "spree_users"                    => -> row { row },
+        "spree_variants"                 => -> row { remap_variants(row) },
+        "spree_volume_prices"            => -> row { remap_volume_prices(row) },
+        "spree_zip_code_ranges"          => -> row { remap_zip_code_ranges(row) },
+        "spree_zone_members"             => -> row { remap_zone_members(row) },
+        "spree_zones"                    => -> row { remap_zones(row) },
       }
     end
 
@@ -297,8 +317,8 @@ module SpreeMigrateDB
       row = data["row"]
       new_row = remaps.fetch(table).call(row)
       insert_row(table, new_row)
-      display_stats if @num_rows % 1000 == 0
-      import_pending if @num_rows % 5000 == 0
+      display_stats if @num_rows % DISPLAY_THRESHOLD == 0
+      import_pending if @num_rows % COMMIT_THRESHOLD == 0
     rescue KeyError => ke
       pp "No mapping found for #{data["table"]}"
       pp data["row"]
@@ -317,6 +337,8 @@ module SpreeMigrateDB
     def lookup_table_name(table)
       c_table = canonical_lookup.canonical_table_name(table)
       if c_table == :not_canonical
+        @errors << "WARNING: #{table} is not canonical"
+        ap "WARNING: #{table} is not canonical"
         table
       else
         c_table
@@ -381,8 +403,7 @@ module SpreeMigrateDB
     end
 
     def remap_assets(row)
-      new_row = update_namespace(row, "type") unless row["type"] == "SafetySheet"
-      new_row ||= row
+      new_row = update_namespace(row, "type")
       new_row = update_namespace(new_row, "viewable_type")
       new_row["attachment_file_size"] = new_row.delete("attachment_size")
       if new_row["attachment_file_name"].blank?
@@ -393,11 +414,60 @@ module SpreeMigrateDB
     end
 
     def remap_calculators(row)
-      new_row = row.dup
-      new_row = update_namespace(new_row, "type")
-      new_row = update_namespace(new_row, "calculable_type")
+      ignored_calculators = %w[
+        Calculator::GiftCardDiscount 
+        Calculator::DiscountOnlyMatchingItems
+      ]
 
-      new_row 
+      ok_calculators = %w[
+        Calculator::Ups::ThreeDaySelect
+        Calculator::Ups::SecondDayAir
+        Calculator::Ups::NextDayAir
+        Calculator::Ups::Ground
+        Calculator::Messenger 
+        Calculator::NewYorkStateClothingSalesTax
+        Calculator::FlatRate
+        Calculator::PerItem
+      ]
+      return :skip if ignored_calculators.include? row["type"]
+
+      if row["calculable_type"] == "Promotion"
+        @promo_count ||= 1
+
+        new_row = update_namespace(row, "type")
+        new_row["calculable_id"] = @promo_count
+        new_row["calculable_type"] = "Spree::PromotionAction"
+
+
+        post_import_data << {
+          "table" => "spree_promotion_actions", 
+          "row" => {
+            "id" => @promo_count, 
+            "activator_id" => row["calculable_id"], 
+            "position" => nil, 
+            "type" => "Spree::Promotion::Actions::CreateAdjustment" 
+          }
+
+        }
+
+        @promo_count += 1
+        new_row
+      elsif row["type"] == "Calculator::SalesTax"
+        new_row = row.dup
+        new_row["type"] = "Spree::Calculator::DefaultTax"
+        new_row = update_namespace(new_row, "calculable_type")
+        new_row 
+      else
+        if ok_calculators.include? row["type"]
+          new_row = row.dup
+          new_row = update_namespace(new_row, "type")
+          new_row = update_namespace(new_row, "calculable_type")
+          new_row 
+        else
+          @errors << {:message => "Invalid Calculator", :table => "spree_calculators", :row => row}
+          :skip
+        end
+      end
     end
 
     def remap_configurations(row)
@@ -430,7 +500,6 @@ module SpreeMigrateDB
       new_row["currency"] = "USD"
       new_row["last_ip_address"] = "127.0.0.1"
 
-      # TODO: figure out where these fields went
       new_row.delete("credit_total")
 
       new_row
@@ -452,6 +521,10 @@ module SpreeMigrateDB
       new_row = row.dup
       new_row["shipping_category_id"] = 1
       new_row["match_all"] = true
+      # make the In store pick up available to all North America
+      if row["name"] == "In Store Pick Up"
+        new_row["zone_id"] = 2
+      end
       new_row
     end
 
@@ -497,6 +570,7 @@ module SpreeMigrateDB
       # so we are assuming that the range should be (NUM+), i.e. (12+)
       new_row["range"] = "(#{range}+)" unless range.blank?
       new_row["name"] = new_row.delete("display")
+      new_row["discount_type"] = "price"
       new_row
     end
 
@@ -508,6 +582,7 @@ module SpreeMigrateDB
     end
 
     def remap_zone_members(row)
+      return :skip if row["zoneable_type"] == "Zone"
       update_namespace(row, "zoneable_type")
     end
 
@@ -544,6 +619,68 @@ module SpreeMigrateDB
       @imported_gift_codes << row["number"]
 
       new_row
+    end
+
+    def remap_product_option_types(row)
+      # Occasionally a row gets malformed. Not sure why
+      if row["id"].blank?
+        @errors << "Invalid product_option_types row: #{row.inspect}"
+        return :skip 
+      end
+
+      row
+    end
+
+    def remap_zip_code_ranges(row)
+      row
+    end
+
+    def remap_tax_rates(row)
+      new_row = row.dup
+      new_row["amount"] = row["amount"].to_f / 100
+
+      new_row
+    end
+
+    def remap_activators(row)
+      new_row = row.dup
+      new_row["code"] = row["code"].downcase.strip
+      new_row["event_name"] = "spree.checkout.coupon_code_added"
+      new_row["type"] = "Spree::Promotion"
+      new_row["advertise"] = !!row["promote"]
+      new_row.delete("combine")
+      new_row.delete("promote")
+      new_row
+    end
+
+    def remap_promotion_rules(row)
+      new_row = row.dup
+      new_row["activator_id"] = new_row.delete("promotion_id")
+      update_namespace(new_row, "type")
+    end
+
+    def remap_preferences(row)
+      return :skip unless row["owner_type"] == "Calculator"
+      new_row = row.merge({
+        "key" => "spree/calculator/#{row["name"]}/amount/#{row["owner_id"]}",
+        "value_type" => "decimal"
+      })
+      new_row.delete("group_id")
+      new_row.delete("group_type")
+      new_row.delete("name")
+      new_row.delete("owner_id")
+      new_row.delete("owner_type")
+      new_row
+    end
+
+    def remap_products_promotion_rules(row)
+      # New spree promotions only lets you have one promotion per product so we have to skip duplicates
+      @promo_products ||= []
+      return :skip if @promo_products.include? row["product_id"]
+
+      @promo_products << row["product_id"]
+      row
+
     end
 
   end
