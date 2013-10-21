@@ -16,6 +16,12 @@ module SpreeMigrateDB
     def self.import(spree_version, schema_file, import_file)
       clean = true
       scrappy = ScrappyImport.new(import_file, clean)
+      scrappy.import!
+    end
+
+    def self.import_selected(spree_version, schema_file, import_file)
+      clean = true
+      scrappy = ScrappyImport.new(import_file, clean)
       scrappy.import_tables
     end
 

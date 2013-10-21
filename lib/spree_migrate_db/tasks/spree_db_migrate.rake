@@ -25,4 +25,14 @@ namespace :spree_migrate_db do
     SpreeMigrateDB::Runner.import(spree_version, schema_file, "tmp/application_definition.stf")
   end
 
+  desc "Imports selected tables from tmp/application_definition.stf"
+  task :import_selected => :environment do
+    spree_version = Gem.loaded_specs["spree"].version.to_s
+    raise "Spree not installed." unless spree_version
+
+    schema_file = File.join(Rails.root, 'db/schema.rb')
+    raise "#{schema_dir} does not exist!" unless File.exist? schema_file
+
+    SpreeMigrateDB::Runner.import_selected(spree_version, schema_file, "tmp/application_definition.stf")
+  end
 end

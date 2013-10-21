@@ -7,9 +7,9 @@ module SpreeMigrateDB
     DISPLAY_THRESHOLD = 2000
 
     INCLUDE_TABLES = %w[
-      promotions
+      zone_members
+      spree_zone_members
     ]
-    #variants_promotion_rules
 
     # when loading the table specified as the key, also delete the tables in the array
     SIDE_POPULATED_TABLES = {
@@ -28,8 +28,10 @@ module SpreeMigrateDB
 
     SKIP_TABLES = %w[ 
       product_imports 
-      state_events ups_shipping_methods 
+      state_events 
+      ups_shipping_methods 
       variants_promotion_rules
+      product_scopes
       zip_code_ranges
     ]
 
@@ -187,12 +189,25 @@ module SpreeMigrateDB
         {"table" => "spree_zip_code_ranges", "row" => { "id" => 3, "name" => "Queens", "start_zip" => "11001", "end_zip" => "11697" }},
         {"table" => "spree_zip_code_ranges", "row" => { "id" => 4, "name" => "Manhattan", "start_zip" => "10001", "end_zip" => "10292" }},
         {"table" => "spree_zip_code_ranges", "row" => { "id" => 5, "name" => "Brooklyn", "start_zip" => "11201", "end_zip" => "11256" }},
-      
+
+        # Zip Code Range Assignments
+        {"table" => "spree_zone_members", "row" => { "id" => 1, "zoneable_id" => 2, "zoneable_type" => "Spree::ZipCodeRange", "zone_id" => 4}},
+        {"table" => "spree_zone_members", "row" => { "id" => 2, "zoneable_id" => 3, "zoneable_type" => "Spree::ZipCodeRange", "zone_id" => 5}},
+        {"table" => "spree_zone_members", "row" => { "id" => 3, "zoneable_id" => 4, "zoneable_type" => "Spree::ZipCodeRange", "zone_id" => 6}},
+        {"table" => "spree_zone_members", "row" => { "id" => 4, "zoneable_id" => 5, "zoneable_type" => "Spree::ZipCodeRange", "zone_id" => 7}},
+        {"table" => "spree_zone_members", "row" => { "id" => 5, "zoneable_id" => 1, "zoneable_type" => "Spree::ZipCodeRange", "zone_id" => 9}},
+
+        # Product Scopes
+        {"table" => "spree_product_scopes", "row" => { "id" => 7, "name" => "with_property_value", "arguments" => %Q{---\n- Featured-products\n- '201209'\n}, "product_group_id" => 4 }},
+        {"table" => "spree_product_scopes", "row" => { "id" => 8, "name" => "ascend_by_updated_at", "arguments" => %Q{--- []\n}, "product_group_id" => 4 }},
+        {"table" => "spree_product_scopes", "row" => { "id" => 13, "name" => "with_property_value", "arguments" => %Q{---\n- Clearance\n- '201209'\n}, "product_group_id" => 3 }},
+        {"table" => "spree_product_scopes", "row" => { "id" => 14, "name" => "ascend_by_updated_at", "arguments" => %Q{--- []\n}, "product_group_id" => 3 }},
+        
       ]
     end
 
     def default_data
-      @default_data ||= [ ]
+      @default_data ||= []
     end
 
     def reset_sequences
@@ -240,6 +255,17 @@ module SpreeMigrateDB
       # Fix adjustments.eligable
 
       fix_images
+      fix_broadway_status
+      set_ssl_preference
+    end
+
+    def set_ssl_preference
+      if @table_counts.keys.include? "spree_preferences"
+        puts "Setting some default preferences" 
+        @config ||= Spree::AppConfiguration.new
+        @config.set_preference :allow_ssl_in_production, false
+        @config.set_preference :admin_interface_logo,"/assets/admin/bg/mws_transparent_small.png"
+      end
     end
 
     def fix_images
@@ -256,6 +282,20 @@ module SpreeMigrateDB
         a.viewable_type = "Spree::Variant"
         a.save!
       end
+    end
+
+    def fix_broadway_status
+      return if %W[spree_orders spree_users] - @table_counts.keys == 0
+      puts "Fixing Broadway Status"
+      update_sql = <<-SQL
+        UPDATE spree_users SET is_broadway_customer = true WHERE id IN (
+          SELECT DISTINCT spree_users.id 
+          FROM spree_users 
+          INNER JOIN spree_orders ON spree_orders.user_id = spree_users.id 
+          WHERE spree_orders.is_broadway_customer = true
+        )
+      SQL
+      ActiveRecord::Base.connection.execute update_sql
     end
 
     def remaps
@@ -285,6 +325,7 @@ module SpreeMigrateDB
         "spree_product_groups_products"  => -> row { row },
         "spree_product_option_types"     => -> row { remap_product_option_types(row) },
         "spree_product_properties"       => -> row { row },
+        "spree_product_scopes"           => -> row { row },
         "spree_products_promotion_rules" => -> row { remap_products_promotion_rules(row) },
         "spree_products_taxons"          => -> row { remap_products_taxons(row) },
         "spree_products"                 => -> row { remap_products(row) },
@@ -534,6 +575,11 @@ module SpreeMigrateDB
         "table" => "spree_prices", 
         "row" => {"variant_id" => row["id"], "amount" => row["price"], "currency" => "USD"}
       }
+      stock_type = new_row.delete("stock_type")
+      case stock_type
+      when 2 then new_row["on_demand"] = true
+      when 3 then new_row["count_on_hand"] = 0
+      end
 
       new_row.delete("price")
 
@@ -582,8 +628,12 @@ module SpreeMigrateDB
     end
 
     def remap_zone_members(row)
-      return :skip if row["zoneable_type"] == "Zone"
-      update_namespace(row, "zoneable_type")
+      return :skip if row["zoneable_type"] == "Zone" || row["zoneable_type"] == "ZipCodeRange"
+      if row["zoneable_type"] == "Spree::ZipCodeRange"
+        row
+      else
+        update_namespace(row, "zoneable_type") 
+      end
     end
 
     def remap_zones(row)
@@ -660,11 +710,45 @@ module SpreeMigrateDB
     end
 
     def remap_preferences(row)
-      return :skip unless row["owner_type"] == "Calculator"
-      new_row = row.merge({
-        "key" => "spree/calculator/#{row["name"]}/amount/#{row["owner_id"]}",
-        "value_type" => "decimal"
-      })
+
+      skip_prefs = %W[
+        ups_login
+        ups_password
+        ups_key
+        shipper_number
+        origin_country
+        origin_state
+        origin_city
+        origin_zip
+        test
+        handling_fee
+        print_invoice_logo_path
+        stylesheets
+        variants_partial
+      ]
+
+      if row["owner_type"] == "Calculator"
+        new_row = row.merge({
+          "key" => "spree/calculator/#{row["name"]}/amount/#{row["owner_id"]}",
+          "value_type" => "decimal"
+        })
+      elsif row["owner_type"] == "Configuration"
+        @config ||= Spree::AppConfiguration.new
+        pref = row["name"]
+        if !skip_prefs.include?(pref) && @config.has_preference?(pref)
+          value_type = @config.send("preferred_#{pref}_type".to_sym)
+          new_row = row.merge({
+            "key" => "spree/app_configuration/#{pref}",
+            "value_type" => value_type.to_s
+          })
+        else
+          @errors << {:message => "Unknown preference #{pref}", :row => row} unless skip_prefs.include? pref
+          return :skip
+        end
+
+      else
+        return :skip
+      end
       new_row.delete("group_id")
       new_row.delete("group_type")
       new_row.delete("name")
